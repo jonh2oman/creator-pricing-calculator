@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Calculate professional pricing for 3D prints, stickers, and custom creator products. Optimize labor, materials, and profit margins.">
+  <title>Creator Pricing Lab - 3D Prints, Stickers & Custom Pricing Calculator</title>
+  
+  <!-- Typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Stylesheet -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="theme-3dprint">
+  <div class="app-container">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="header-logo">
+        <div class="logo-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+          </svg>
+        </div>
+        <div>
+          <h1>Creator Pricing Lab</h1>
+          <p class="header-subtitle">Analyze materials, labor, power, and profit margins</p>
+        </div>
+      </div>
+      <div class="header-stats">
+        <span class="stat-badge">
+          <span class="stat-label">Saved Projects</span>
+          <span id="saved-count" class="stat-value">0</span>
+        </span>
+      </div>
+    </header>
+
+    <div class="main-layout">
+      <!-- Sidebar / Saved Products List -->
+      <aside class="sidebar-library" id="sidebar-library">
+        <div class="sidebar-header">
+          <h2>Product Library</h2>
+          <button id="toggle-sidebar" class="icon-btn" aria-label="Toggle Sidebar">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M18 6 6 18M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+        <div class="search-box">
+          <input type="text" id="library-search" placeholder="Search saved products..." aria-label="Search saved products">
+        </div>
+        <div class="library-list" id="library-list">
+          <div class="empty-state">
+            <p>No saved products yet. Set inputs and click "Save to Library".</p>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Main Configurator -->
+      <main class="configurator-panel">
+        <!-- Product Tabs -->
+        <nav class="product-tabs" aria-label="Product type tabs">
+          <button class="tab-btn active" data-tab="3dprint" id="tab-3dprint">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="tab-icon">
+              <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/>
+              <path d="M12 9v4M12 17h.01"/>
+            </svg>
+            3D Prints
+          </button>
+          <button class="tab-btn" data-tab="sticker" id="tab-sticker">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="tab-icon">
+              <path d="M12 2H2v10h10V2zM22 12h-10v10h10V12z"/>
+              <path d="M12 22V12H2"/>
+            </svg>
+            Stickers
+          </button>
+          <button class="tab-btn" data-tab="custom" id="tab-custom">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="tab-icon">
+              <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/>
+              <path d="M12 8v8M8 12h8"/>
+            </svg>
+            Custom Product
+          </button>
+        </nav>
+
+        <!-- Configuration Forms -->
+        <div class="form-container">
+          <!-- 3D PRINT FORM -->
+          <form id="form-3dprint" class="calc-form active-form">
+            <div class="form-grid">
+              <!-- Material Section -->
+              <section class="form-section">
+                <h3>Material Settings</h3>
+                <div class="input-group">
+                  <label for="print-spool-price">Spool Price ($)</label>
+                  <input type="number" id="print-spool-price" value="25.00" step="0.01" min="0" required>
+                </div>
+                <div class="input-group">
+                  <label for="print-spool-weight">Spool Weight (g)</label>
+                  <input type="number" id="print-spool-weight" value="1000" min="1" required>
+                </div>
+                <div class="input-group">
+                  <label for="print-weight">Model Weight (g)</label>
+                  <input type="number" id="print-weight" value="150" min="0" required>
+                </div>
+              </section>
+
+              <!-- Labor Section -->
+              <section class="form-section">
+                <h3>Labor Settings</h3>
+                <div class="input-group">
+                  <label for="print-labor-rate">Labor Rate ($/hr)</label>
+                  <input type="number" id="print-labor-rate" value="25.00" step="0.50" min="0" required>
+                </div>
+                <div class="input-group">
+                  <label for="print-setup-time">Prep/Setup Time (hrs)</label>
+                  <input type="number" id="print-setup-time" value="0.25" step="0.05" min="0" required>
+                </div>
+                <div class="input-group">
+                  <label for="print-finish-time">Post-Processing (hrs)</label>
+                  <input type="number" id="print-finish-time" value="0.5" step="0.05" min="0" required>
+                </div>
+              </section>
+
+              <!-- Power & Printer Settings -->
+              <section class="form-section">
+                <h3>Energy & Wear</h3>
+                <div class="input-group">
+                  <label for="print-time">Print Time (hrs)</label>
+                  <input type="number" id="print-time" value="8.0" step="0.1" min="0" required>
+                </div>
+                <div class="input-group">
+                  <label for="print-power">Printer Power (W)</label>
+                  <input type="number" id="print-power" value="150" min="0" required>
+                </div>
+                <div class="input-group">
+                  <label for="print-electricity">Electricity Cost ($/kWh)</label>
+                  <input type="number" id="print-electricity" value="0.15" step="0.01" min="0" required>
+                </div>
+              </section>
+
+              <!-- Business Settings -->
+              <section class="form-section">
+                <h3>Markup & Buffer</h3>
+                <div class="input-group">
+                  <label for="print-failure-rate">Failure Buffer (%)</label>
+                  <input type="number" id="print-failure-rate" value="10" min="0" max="100" required>
+                </div>
+                <div class="input-group">
+                  <label for="print-markup">Profit Margin (%)</label>
+                  <input type="number" id="print-markup" value="50" min="0" required>
+                </div>
+                <div class="input-group">
+                  <label for="print-consignment">Consignment Fee (%)</label>
+                  <input type="number" id="print-consignment" value="0" min="0" max="100" step="0.5" required>
+                </div>
+                <div class="input-group">
+                  <label for="print-fixed-costs">Other Fixed Costs ($)</label>
+                  <input type="number" id="print-fixed-costs" value="0.00" step="0.01" min="0" required>
+                </div>
+              </section>
+            </div>
+          </form>
+
+          <!-- STICKER FORM -->
+          <form id="form-sticker" class="calc-form">
+            <div class="form-grid">
+              <!-- Materials Sheet Settings -->
+              <section class="form-section">
+                <h3>Material Settings</h3>
+                <div class="input-group">
+                  <label for="sticker-sheet-cost">Sheet Cost (Vinyl/Ink/Lam) ($)</label>
+                  <input type="number" id="sticker-sheet-cost" value="1.80" step="0.05" min="0" required>
+                </div>
+                <div class="input-group">
+                  <label for="sticker-yield">Stickers per Sheet</label>
+                  <input type="number" id="sticker-yield" value="12" min="1" required>
+                </div>
+                <div class="input-group">
+                  <label for="sticker-fail-pct">Waste / Error Rate (%)</label>
+                  <input type="number" id="sticker-fail-pct" value="5" min="0" max="100" required>
+                </div>
+              </section>
+
+              <!-- Labor Settings -->
+              <section class="form-section">
+                <h3>Labor Settings (Batch)</h3>
+                <div class="input-group">
+                  <label for="sticker-labor-rate">Labor Rate ($/hr)</label>
+                  <input type="number" id="sticker-labor-rate" value="20.00" step="0.50" min="0" required>
+                </div>
+                <div class="input-group">
+                  <label for="sticker-setup-time">Design & Setup (hrs)</label>
+                  <input type="number" id="sticker-setup-time" value="0.5" step="0.05" min="0" required>
+                </div>
+                <div class="input-group">
+                  <label for="sticker-cut-time">Cut & Peel Time (hrs)</label>
+                  <input type="number" id="sticker-cut-time" value="0.25" step="0.05" min="0" required>
+                </div>
+              </section>
+
+              <!-- Packaging Settings -->
+              <section class="form-section">
+                <h3>Packaging per Sticker</h3>
+                <div class="input-group">
+                  <label for="sticker-envelope">Envelope / Backing ($)</label>
+                  <input type="number" id="sticker-envelope" value="0.30" step="0.01" min="0" required>
+                </div>
+                <div class="input-group">
+                  <label for="sticker-sleeve">Sleeve / Protector ($)</label>
+                  <input type="number" id="sticker-sleeve" value="0.10" step="0.01" min="0" required>
+                </div>
+              </section>
+
+              <!-- Business Settings -->
+              <section class="form-section">
+                <h3>Markup & Overhead</h3>
+                <div class="input-group">
+                  <label for="sticker-markup">Profit Margin (%)</label>
+                  <input type="number" id="sticker-markup" value="70" min="0" required>
+                </div>
+                <div class="input-group">
+                  <label for="sticker-consignment">Consignment Fee (%)</label>
+                  <input type="number" id="sticker-consignment" value="0" min="0" max="100" step="0.5" required>
+                </div>
+                <div class="input-group">
+                  <label for="sticker-fixed-costs">Other Fixed Costs ($)</label>
+                  <input type="number" id="sticker-fixed-costs" value="0.00" step="0.01" min="0" required>
+                </div>
+              </section>
+            </div>
+          </form>
+
+          <!-- CUSTOM FORM -->
+          <form id="form-custom" class="calc-form">
+            <div class="form-grid">
+              <!-- Raw Cost -->
+              <section class="form-section">
+                <h3>Materials & Parts</h3>
+                <div class="input-group">
+                  <label for="custom-material-cost">Material Cost ($)</label>
+                  <input type="number" id="custom-material-cost" value="10.00" step="0.01" min="0" required>
+                </div>
+                <div class="input-group">
+                  <label for="custom-packaging-cost">Packaging Cost ($)</label>
+                  <input type="number" id="custom-packaging-cost" value="1.50" step="0.01" min="0" required>
+                </div>
+              </section>
+
+              <!-- Labor -->
+              <section class="form-section">
+                <h3>Labor Settings</h3>
+                <div class="input-group">
+                  <label for="custom-labor-rate">Labor Rate ($/hr)</label>
+                  <input type="number" id="custom-labor-rate" value="25.00" step="0.50" min="0" required>
+                </div>
+                <div class="input-group">
+                  <label for="custom-labor-time">Labor Time (hrs)</label>
+                  <input type="number" id="custom-labor-time" value="1.5" step="0.1" min="0" required>
+                </div>
+              </section>
+
+              <!-- Overhead -->
+              <section class="form-section">
+                <h3>Overhead & Failure</h3>
+                <div class="input-group">
+                  <label for="custom-fixed-costs">Other Fixed Costs ($)</label>
+                  <input type="number" id="custom-fixed-costs" value="2.00" step="0.01" min="0" required>
+                </div>
+                <div class="input-group">
+                  <label for="custom-failure-rate">Failure Buffer (%)</label>
+                  <input type="number" id="custom-failure-rate" value="5" min="0" max="100" required>
+                </div>
+              </section>
+
+              <!-- Business Settings -->
+              <section class="form-section">
+                <h3>Markup & Profit</h3>
+                <div class="input-group">
+                  <label for="custom-markup">Profit Margin (%)</label>
+                  <input type="number" id="custom-markup" value="60" min="0" required>
+                </div>
+                <div class="input-group">
+                  <label for="custom-consignment">Consignment Fee (%)</label>
+                  <input type="number" id="custom-consignment" value="0" min="0" max="100" step="0.5" required>
+                </div>
+              </section>
+            </div>
+          </form>
+        </div>
+      </main>
+
+      <!-- Dashboard Panel -->
+      <section class="dashboard-panel">
+        <h2 class="dash-title">Pricing Dashboard</h2>
+        
+        <!-- Summary Cards -->
+        <div class="dashboard-grid">
+          <div class="dash-card primary-card">
+            <div class="card-label">Recommended Retail</div>
+            <div class="card-value" id="rrp-value">$0.00</div>
+            <div class="card-subtext" id="rrp-markup">Based on 50% Profit Margin</div>
+          </div>
+
+          <div class="dash-card">
+            <div class="card-label">Production Cost</div>
+            <div class="card-value" id="cost-value">$0.00</div>
+            <div class="card-subtext" id="cost-subtext">Material + Labor + Power</div>
+          </div>
+
+          <div class="dash-card">
+            <div class="card-label">Consignment Fee</div>
+            <div class="card-value" style="color: var(--warning);" id="consignment-value">$0.00</div>
+            <div class="card-subtext" id="consignment-rate">0% Consignment</div>
+          </div>
+
+          <div class="dash-card">
+            <div class="card-label">Creator Payout</div>
+            <div class="card-value" style="color: var(--accent);" id="payout-value">$0.00</div>
+            <div class="card-subtext" id="payout-subtext">Amount you receive</div>
+          </div>
+
+          <div class="dash-card">
+            <div class="card-label">Net Profit (Retail)</div>
+            <div class="card-value margin-profit" id="profit-value">$0.00</div>
+            <div class="card-subtext" id="profit-margin-pct">0% Margin</div>
+          </div>
+
+          <div class="dash-card" style="grid-column: span 2;">
+            <div class="card-label">Wholesale Price (50% of Retail)</div>
+            <div class="card-value" id="wholesale-value">$0.00</div>
+            <div class="card-subtext" id="wholesale-profit">Profit: $0.00</div>
+          </div>
+        </div>
+
+        <!-- Cost Breakdown Chart & Legend -->
+        <div class="chart-container">
+          <div class="chart-wrapper">
+            <svg id="cost-chart" viewBox="0 0 100 100" class="donut-chart" aria-label="Cost Breakdown Pie Chart">
+              <!-- Generated Dynamically by JS -->
+            </svg>
+            <div class="chart-center">
+              <span class="center-label">Cost Ratio</span>
+              <span id="center-ratio" class="center-value">0%</span>
+            </div>
+          </div>
+          
+          <div class="chart-legend" id="chart-legend">
+            <!-- Populated dynamically -->
+          </div>
+        </div>
+
+        <!-- Actions and Library controls -->
+        <div class="dashboard-actions">
+          <div class="save-box">
+            <input type="text" id="product-name-input" placeholder="Product Name (e.g. Flexi Dragon)" aria-label="Product Name">
+            <button id="btn-save" class="btn btn-primary">Save to Library</button>
+          </div>
+          <div class="btn-row">
+            <button id="btn-export" class="btn btn-secondary">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-icon">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>
+              </svg>
+              Export Summary
+            </button>
+            <button id="btn-reset" class="btn btn-text">Reset Form</button>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <!-- Notification Toast -->
+  <div id="toast" class="toast" role="alert" aria-live="polite"></div>
+
+  <!-- Scripts -->
+  <script src="app.js"></script>
+</body>
+</html>
