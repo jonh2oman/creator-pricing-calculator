@@ -1107,7 +1107,7 @@ document.addEventListener('DOMContentLoaded', () => {
       margin:       0,
       filename:     `Quote_${clientName.replace(/\s+/g, '_')}_${prodName.replace(/\s+/g, '_')}.pdf`,
       image:        { type: 'jpeg', quality: 0.98 },
-      html2canvas:  { scale: 2, useCORS: true, windowWidth: 800 },
+      html2canvas:  { scale: 2, useCORS: true, scrollX: 0, scrollY: 0, windowWidth: 800 },
       jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
     };
 
