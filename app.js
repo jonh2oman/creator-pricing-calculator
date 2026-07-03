@@ -1103,6 +1103,18 @@ document.addEventListener('DOMContentLoaded', () => {
       </div>
     `;
 
+    // Create a temporary container for html2pdf
+    const container = document.createElement('div');
+    container.innerHTML = quoteHtml;
+    
+    // Position it securely on screen but behind all other content
+    container.style.position = 'absolute';
+    container.style.top = '0';
+    container.style.left = '0';
+    container.style.width = '800px'; // Fixed width for consistent layout
+    container.style.zIndex = '-9999';
+    document.body.appendChild(container);
+
     const opt = {
       margin:       0,
       filename:     `Quote_${clientName.replace(/\s+/g, '_')}_${prodName.replace(/\s+/g, '_')}.pdf`,
@@ -1111,7 +1123,8 @@ document.addEventListener('DOMContentLoaded', () => {
       jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
     };
 
-    html2pdf().set(opt).from(quoteHtml).save().then(() => {
+    html2pdf().set(opt).from(container).save().then(() => {
+      document.body.removeChild(container);
       showToast('PDF Quote Downloaded!');
       modalQuote.classList.remove('open');
     });
