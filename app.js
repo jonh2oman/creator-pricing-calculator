@@ -57,13 +57,113 @@ document.addEventListener('DOMContentLoaded', () => {
   firebase.initializeApp(firebaseConfig);
   const db = firebase.firestore();
 
-  // Load products from Firestore real-time
-  db.collection('products').orderBy('createdAt', 'desc').onSnapshot(snapshot => {
-    products = [];
-    snapshot.forEach(doc => {
-      products.push({ id: doc.id, ...doc.data() });
+  const auth = firebase.auth();
+  let currentUser = null;
+  let unsubscribeProducts = null;
+  let unsubscribeSettings = null;
+
+  // Auth UI Elements
+  const authContainer = document.getElementById('auth-container');
+  const authUserEmail = document.getElementById('auth-user-email');
+  const btnLogin = document.getElementById('btn-login');
+  const btnLogout = document.getElementById('btn-logout');
+  const btnSettingsHeader = document.getElementById('btn-settings');
+  
+  const modalAuth = document.getElementById('modal-auth');
+  const btnSubmitAuth = document.getElementById('btn-submit-auth');
+  const btnToggleAuth = document.getElementById('btn-toggle-auth');
+  const authTitle = document.getElementById('auth-title');
+  const authEmail = document.getElementById('auth-email');
+  const authPassword = document.getElementById('auth-password');
+  const authError = document.getElementById('auth-error');
+  let isSignUp = false;
+
+  // Listen to Auth State
+  auth.onAuthStateChanged(user => {
+    currentUser = user;
+    if (user) {
+      // Logged in
+      authUserEmail.textContent = user.email;
+      authUserEmail.style.display = 'inline';
+      btnLogin.style.display = 'none';
+      btnLogout.style.display = 'inline-block';
+      btnSettingsHeader.style.display = 'inline-flex';
+      
+      // Load user products
+      unsubscribeProducts = db.collection('users').doc(user.uid).collection('products').orderBy('createdAt', 'desc').onSnapshot(snapshot => {
+        products = [];
+        snapshot.forEach(doc => {
+          products.push({ id: doc.id, ...doc.data() });
+        });
+        renderLibraryList();
+      });
+
+      // Load user settings
+      unsubscribeSettings = db.collection('users').doc(user.uid).collection('settings').doc('global').onSnapshot(doc => {
+        if (doc.exists) {
+          currentSettings = doc.data();
+        } else {
+          currentSettings = { bizName: '', bizEmail: '', bizLogo: '' };
+        }
+      });
+      
+    } else {
+      // Logged out
+      authUserEmail.style.display = 'none';
+      btnLogin.style.display = 'inline-block';
+      btnLogout.style.display = 'none';
+      btnSettingsHeader.style.display = 'none';
+      
+      if (unsubscribeProducts) unsubscribeProducts();
+      if (unsubscribeSettings) unsubscribeSettings();
+      
+      products = [];
+      currentSettings = { bizName: '', bizEmail: '', bizLogo: '' };
+      renderLibraryList();
+    }
+  });
+
+  // Auth Modal Logic
+  btnLogin.addEventListener('click', () => {
+    authError.style.display = 'none';
+    modalAuth.classList.add('open');
+  });
+
+  btnLogout.addEventListener('click', () => {
+    auth.signOut();
+    showToast('Signed out successfully.');
+  });
+
+  btnToggleAuth.addEventListener('click', () => {
+    isSignUp = !isSignUp;
+    authTitle.textContent = isSignUp ? 'Create Account' : 'Sign In';
+    btnSubmitAuth.textContent = isSignUp ? 'Sign Up' : 'Sign In';
+    btnToggleAuth.textContent = isSignUp ? 'Already have an account? Sign In' : 'Need an account? Sign Up';
+    authError.style.display = 'none';
+  });
+
+  btnSubmitAuth.addEventListener('click', () => {
+    const email = authEmail.value.trim();
+    const password = authPassword.value;
+    if (!email || !password) return;
+
+    btnSubmitAuth.disabled = true;
+    
+    const authPromise = isSignUp 
+      ? auth.createUserWithEmailAndPassword(email, password)
+      : auth.signInWithEmailAndPassword(email, password);
+      
+    authPromise.then(() => {
+      modalAuth.classList.remove('open');
+      showToast(isSignUp ? 'Account created!' : 'Signed in successfully!');
+      authEmail.value = '';
+      authPassword.value = '';
+    }).catch(err => {
+      authError.textContent = err.message;
+      authError.style.display = 'block';
+    }).finally(() => {
+      btnSubmitAuth.disabled = false;
     });
-    renderLibraryList();
   });
 
   // --- Helper Functions ---
@@ -463,9 +563,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const currentResults = calculate();
     const inputs = getProductInputs(activeTab);
 
+    if (!currentUser) {
+      showToast('Please sign in to save products.');
+      return;
+    }
+
     if (editingProductId) {
       // Edit mode
-      db.collection('products').doc(editingProductId).update({
+      db.collection('users').doc(currentUser.uid).collection('products').doc(editingProductId).update({
         name,
         inputs,
         rrp: currentResults.rrp,
@@ -483,7 +588,7 @@ document.addEventListener('DOMContentLoaded', () => {
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       };
-      db.collection('products').add(newProduct).then(docRef => {
+      db.collection('users').doc(currentUser.uid).collection('products').add(newProduct).then(docRef => {
         editingProductId = docRef.id;
         showToast(`Saved "${name}" to library.`);
       });
@@ -512,7 +617,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const name = product ? product.name : 'Product';
     
     if (confirm(`Are you sure you want to delete "${name}"?`)) {
-      db.collection('products').doc(id).delete().then(() => {
+      db.collection('users').doc(currentUser.uid).collection('products').doc(id).delete().then(() => {
         if (editingProductId === id) {
           editingProductId = null;
           productNameInput.value = '';
@@ -792,12 +897,7 @@ document.addEventListener('DOMContentLoaded', () => {
     bizEmail: '',
     bizLogo: ''
   };
-  
-  db.collection('settings').doc('global').onSnapshot(doc => {
-    if (doc.exists) {
-      currentSettings = doc.data();
-    }
-  });
+
 
   // State
   let quoteTiers = [{ qty: 50, pct: 10 }];
@@ -903,7 +1003,11 @@ document.addEventListener('DOMContentLoaded', () => {
       bizEmail: inputBizEmail.value.trim(),
       bizLogo: inputBizLogo.value.trim()
     };
-    db.collection('settings').doc('global').set(currentSettings).then(() => {
+    if (!currentUser) {
+      showToast('Please sign in to save settings.');
+      return;
+    }
+    db.collection('users').doc(currentUser.uid).collection('settings').doc('global').set(currentSettings).then(() => {
       modalSettings.classList.remove('open');
       showToast('Settings Saved!');
     });

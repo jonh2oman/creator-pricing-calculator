@@ -12,7 +12,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
   
   <!-- Stylesheet -->
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=2">
 </head>
 <body class="theme-3dprint">
   <div class="app-container">
@@ -30,7 +30,12 @@
         </div>
       </div>
       <div class="header-stats">
-        <button id="btn-settings" class="icon-btn" aria-label="Settings" style="margin-right: 1rem;">
+        <div id="auth-container" style="display: flex; align-items: center; gap: 1rem; margin-right: 1rem; border-right: 1px solid var(--border-color); padding-right: 1rem;">
+          <span id="auth-user-email" style="font-size: 0.85rem; color: var(--text-muted); display: none;"></span>
+          <button id="btn-login" class="btn btn-primary" style="padding: 0.5rem 1rem; font-size: 0.85rem;">Sign In</button>
+          <button id="btn-logout" class="btn btn-secondary" style="padding: 0.5rem 1rem; font-size: 0.85rem; display: none;">Sign Out</button>
+        </div>
+        <button id="btn-settings" class="icon-btn" aria-label="Settings" style="margin-right: 1rem; display: none;">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="12" cy="12" r="3"></circle>
             <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
@@ -497,13 +502,40 @@
     </div>
   </div>
 
+  <!-- Auth Modal -->
+  <div id="modal-auth" class="modal-overlay">
+    <div class="modal-content" style="max-width: 400px;">
+      <div class="modal-header">
+        <h2 id="auth-title">Sign In</h2>
+        <button class="close-modal icon-btn">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-grid" style="grid-template-columns: 1fr;">
+          <div class="input-group">
+            <label for="auth-email">Email</label>
+            <input type="email" id="auth-email" placeholder="you@example.com">
+          </div>
+          <div class="input-group">
+            <label for="auth-password">Password</label>
+            <input type="password" id="auth-password" placeholder="••••••••">
+          </div>
+          <div id="auth-error" style="color: var(--danger); font-size: 0.85rem; display: none;"></div>
+        </div>
+      </div>
+      <div class="modal-footer" style="flex-direction: column; gap: 0.5rem; align-items: stretch;">
+        <button id="btn-submit-auth" class="btn btn-primary" style="width: 100%;">Sign In</button>
+        <button id="btn-toggle-auth" class="btn btn-text" style="width: 100%; font-size: 0.85rem;">Need an account? Sign Up</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Notification Toast -->
   <div id="toast" class="toast" role="alert" aria-live="polite"></div>
 
   <!-- Scripts -->
-  <!-- Scripts -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
   <script src="app.js"></script>
 </body>
