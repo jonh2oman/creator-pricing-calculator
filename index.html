@@ -30,6 +30,12 @@
         </div>
       </div>
       <div class="header-stats">
+        <button id="btn-settings" class="icon-btn" aria-label="Settings" style="margin-right: 1rem;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+          </svg>
+        </button>
         <span class="stat-badge">
           <span class="stat-label">Saved Projects</span>
           <span id="saved-count" class="stat-value">0</span>
@@ -359,6 +365,16 @@
             <button id="btn-save" class="btn btn-primary">Save to Library</button>
           </div>
           <div class="btn-row">
+            <button id="btn-quote" class="btn btn-primary" style="background: var(--accent); color: white;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-icon">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="16" y1="13" x2="8" y2="13"></line>
+                <line x1="16" y1="17" x2="8" y2="17"></line>
+                <polyline points="10 9 9 9 8 9"></polyline>
+              </svg>
+              Create Quote
+            </button>
             <button id="btn-export" class="btn btn-secondary">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-icon">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>
@@ -372,10 +388,123 @@
     </div>
   </div>
 
+  <!-- Settings Modal -->
+  <div id="modal-settings" class="modal-overlay">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Business Settings</h2>
+        <button class="close-modal icon-btn">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-grid" style="grid-template-columns: 1fr;">
+          <div class="input-group">
+            <label for="settings-biz-name">Business Name</label>
+            <input type="text" id="settings-biz-name" placeholder="e.g. My Awesome 3D Prints">
+          </div>
+          <div class="input-group">
+            <label for="settings-biz-email">Contact Email</label>
+            <input type="email" id="settings-biz-email" placeholder="contact@example.com">
+          </div>
+          <div class="input-group">
+            <label for="settings-biz-logo">Logo URL</label>
+            <input type="url" id="settings-biz-logo" placeholder="https://example.com/logo.png">
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="btn-save-settings" class="btn btn-primary">Save Settings</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quote Modal -->
+  <div id="modal-quote" class="modal-overlay">
+    <div class="modal-content modal-lg">
+      <div class="modal-header">
+        <h2>Create Quote</h2>
+        <button class="close-modal icon-btn">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="quote-layout">
+          <div class="quote-config">
+            <h3>Client Details</h3>
+            <div class="input-group">
+              <label for="quote-client-name">Client Name</label>
+              <input type="text" id="quote-client-name" placeholder="Client Name">
+            </div>
+            
+            <h3 style="margin-top: 1rem;">Order Details</h3>
+            <div class="input-group">
+              <label for="quote-quantity">Quantity</label>
+              <input type="number" id="quote-quantity" value="1" min="1">
+            </div>
+            
+            <div class="discount-mode-toggle" style="margin-top: 1rem; display: flex; gap: 1rem;">
+              <label><input type="radio" name="discount-mode" value="none" checked> No Discount</label>
+              <label><input type="radio" name="discount-mode" value="percent"> % Off Total</label>
+              <label><input type="radio" name="discount-mode" value="tiered"> Tiered Pricing</label>
+            </div>
+            
+            <div id="discount-percent-box" class="input-group" style="margin-top: 1rem; display: none;">
+              <label for="quote-discount-pct">Discount (%)</label>
+              <input type="number" id="quote-discount-pct" value="0" min="0" max="100">
+            </div>
+            
+            <div id="discount-tiered-box" style="margin-top: 1rem; display: none;">
+              <p style="font-size: 0.85rem; color: #666; margin-bottom: 0.5rem;">Define price tiers. e.g. 50+ items = 10% off, 100+ items = 20% off.</p>
+              <div id="tier-list">
+                <!-- Dynamically populated -->
+              </div>
+              <button id="btn-add-tier" class="btn btn-text" style="padding: 0; margin-top: 0.5rem; color: var(--accent);">+ Add Tier</button>
+            </div>
+          </div>
+          <div class="quote-preview">
+            <h3>Preview Summary</h3>
+            <div class="quote-summary-card">
+              <div class="quote-line">
+                <span>Base Unit Price:</span>
+                <span id="preview-unit-price">$0.00</span>
+              </div>
+              <div class="quote-line">
+                <span>Quantity:</span>
+                <span id="preview-qty">1</span>
+              </div>
+              <div class="quote-line">
+                <span>Subtotal:</span>
+                <span id="preview-subtotal">$0.00</span>
+              </div>
+              <div class="quote-line discount-line">
+                <span>Discount:</span>
+                <span id="preview-discount">-$0.00</span>
+              </div>
+              <hr style="margin: 0.5rem 0; border: none; border-top: 1px solid #eee;">
+              <div class="quote-line total">
+                <span>Total Quote Price:</span>
+                <span id="preview-total">$0.00</span>
+              </div>
+              <div class="quote-line">
+                <span style="font-size: 0.8rem; color: #666;">Effective Unit Price:</span>
+                <span id="preview-effective-unit" style="font-size: 0.8rem; color: #666;">$0.00</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer" style="justify-content: space-between;">
+        <span style="font-size: 0.8rem; color: #666;">Requires business settings to be configured.</span>
+        <button id="btn-generate-pdf" class="btn btn-primary" style="background: var(--accent);">Download PDF Quote</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Notification Toast -->
   <div id="toast" class="toast" role="alert" aria-live="polite"></div>
 
   <!-- Scripts -->
+  <!-- Scripts -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

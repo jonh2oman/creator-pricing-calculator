@@ -41,8 +41,30 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // --- App State ---
   let activeTab = '3dprint';
-  let products = JSON.parse(localStorage.getItem('pricing_lab_products')) || [];
+  let products = [];
   let editingProductId = null;
+
+  // --- Firebase Initialization ---
+  const firebaseConfig = {
+    apiKey: "AIzaSyAKryJEBbB1Le4xA6-cKiv7V-BqJeWkeLg",
+    authDomain: "pricing-calculator-4ebac.firebaseapp.com",
+    projectId: "pricing-calculator-4ebac",
+    storageBucket: "pricing-calculator-4ebac.firebasestorage.app",
+    messagingSenderId: "793929161860",
+    appId: "1:793929161860:web:bf46813eb966765a0cf6d1",
+    measurementId: "G-8G0W19752G"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+
+  // Load products from Firestore real-time
+  db.collection('products').orderBy('createdAt', 'desc').onSnapshot(snapshot => {
+    products = [];
+    snapshot.forEach(doc => {
+      products.push({ id: doc.id, ...doc.data() });
+    });
+    renderLibraryList();
+  });
 
   // --- Helper Functions ---
   const getInputValue = (id) => parseFloat(document.getElementById(id).value) || 0;
@@ -443,21 +465,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (editingProductId) {
       // Edit mode
-      const idx = products.findIndex(p => p.id === editingProductId);
-      if (idx !== -1) {
-        products[idx] = {
-          ...products[idx],
-          name,
-          inputs,
-          rrp: currentResults.rrp,
-          updatedAt: new Date().toISOString()
-        };
+      db.collection('products').doc(editingProductId).update({
+        name,
+        inputs,
+        rrp: currentResults.rrp,
+        updatedAt: new Date().toISOString()
+      }).then(() => {
         showToast(`Updated "${name}" in library.`);
-      }
+      });
     } else {
       // New save
       const newProduct = {
-        id: 'prod_' + Date.now(),
         name,
         type: activeTab,
         inputs,
@@ -465,13 +483,11 @@ document.addEventListener('DOMContentLoaded', () => {
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       };
-      products.unshift(newProduct);
-      editingProductId = newProduct.id;
-      showToast(`Saved "${name}" to library.`);
+      db.collection('products').add(newProduct).then(docRef => {
+        editingProductId = docRef.id;
+        showToast(`Saved "${name}" to library.`);
+      });
     }
-
-    localStorage.setItem('pricing_lab_products', JSON.stringify(products));
-    renderLibraryList();
   };
 
   const loadProduct = (id) => {
@@ -496,17 +512,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const name = product ? product.name : 'Product';
     
     if (confirm(`Are you sure you want to delete "${name}"?`)) {
-      products = products.filter(p => p.id !== id);
-      localStorage.setItem('pricing_lab_products', JSON.stringify(products));
-      
-      if (editingProductId === id) {
-        editingProductId = null;
-        productNameInput.value = '';
-        btnReset.click();
-      }
-      
-      renderLibraryList();
-      showToast(`Deleted "${name}" from library.`);
+      db.collection('products').doc(id).delete().then(() => {
+        if (editingProductId === id) {
+          editingProductId = null;
+          productNameInput.value = '';
+          btnReset.click();
+        }
+        showToast(`Deleted "${name}" from library.`);
+      });
     }
   };
 
@@ -741,4 +754,283 @@ document.addEventListener('DOMContentLoaded', () => {
   // --- Initial Launch Setup ---
   switchTab('3dprint');
   renderLibraryList();
+  // ==========================================================================
+  // Quotes and Settings Logic
+  // ==========================================================================
+
+  // Elements
+  const modalSettings = document.getElementById('modal-settings');
+  const modalQuote = document.getElementById('modal-quote');
+  const btnSettings = document.getElementById('btn-settings');
+  const btnQuote = document.getElementById('btn-quote');
+  const closeModals = document.querySelectorAll('.close-modal');
+
+  const inputBizName = document.getElementById('settings-biz-name');
+  const inputBizEmail = document.getElementById('settings-biz-email');
+  const inputBizLogo = document.getElementById('settings-biz-logo');
+  const btnSaveSettings = document.getElementById('btn-save-settings');
+
+  const quoteClientName = document.getElementById('quote-client-name');
+  const quoteQuantity = document.getElementById('quote-quantity');
+  const discountRadios = document.getElementsByName('discount-mode');
+  const discountPercentBox = document.getElementById('discount-percent-box');
+  const discountTieredBox = document.getElementById('discount-tiered-box');
+  const quoteDiscountPct = document.getElementById('quote-discount-pct');
+  const btnAddTier = document.getElementById('btn-add-tier');
+  const tierList = document.getElementById('tier-list');
+  const btnGeneratePdf = document.getElementById('btn-generate-pdf');
+
+  const previewUnitPrice = document.getElementById('preview-unit-price');
+  const previewQty = document.getElementById('preview-qty');
+  const previewSubtotal = document.getElementById('preview-subtotal');
+  const previewDiscount = document.getElementById('preview-discount');
+  const previewTotal = document.getElementById('preview-total');
+  const previewEffectiveUnit = document.getElementById('preview-effective-unit');
+
+  let currentSettings = {
+    bizName: '',
+    bizEmail: '',
+    bizLogo: ''
+  };
+  
+  db.collection('settings').doc('global').onSnapshot(doc => {
+    if (doc.exists) {
+      currentSettings = doc.data();
+    }
+  });
+
+  // State
+  let quoteTiers = [{ qty: 50, pct: 10 }];
+
+  // Render Tiers
+  const renderTiers = () => {
+    tierList.innerHTML = '';
+    quoteTiers.forEach((tier, index) => {
+      const row = document.createElement('div');
+      row.className = 'tier-row';
+      row.innerHTML = `
+        <span>Qty >= </span>
+        <input type="number" style="width: 80px;" value="${tier.qty}" onchange="updateTier(${index}, 'qty', this.value)">
+        <span> gets </span>
+        <input type="number" style="width: 80px;" value="${tier.pct}" onchange="updateTier(${index}, 'pct', this.value)">
+        <span>% off</span>
+        <button class="icon-btn" onclick="removeTier(${index})" style="color: var(--danger); padding: 0.25rem;">
+          &times;
+        </button>
+      `;
+      tierList.appendChild(row);
+    });
+    updateQuotePreview();
+  };
+
+  window.updateTier = (idx, field, val) => {
+    quoteTiers[idx][field] = parseFloat(val) || 0;
+    updateQuotePreview();
+  };
+
+  window.removeTier = (idx) => {
+    quoteTiers.splice(idx, 1);
+    renderTiers();
+  };
+
+  btnAddTier.addEventListener('click', () => {
+    const lastQty = quoteTiers.length > 0 ? quoteTiers[quoteTiers.length - 1].qty : 0;
+    quoteTiers.push({ qty: lastQty + 50, pct: 15 });
+    renderTiers();
+  });
+
+  // Calculate Quote Preview
+  const updateQuotePreview = () => {
+    const qty = parseFloat(quoteQuantity.value) || 1;
+    const baseResults = calculate(); // Get current RRP from the main app logic
+    const unitPrice = baseResults ? baseResults.rrp : 0;
+    const subtotal = unitPrice * qty;
+
+    let discountMode = 'none';
+    discountRadios.forEach(r => { if (r.checked) discountMode = r.value; });
+
+    let discountAmt = 0;
+    
+    if (discountMode === 'percent') {
+      const pct = parseFloat(quoteDiscountPct.value) || 0;
+      discountAmt = subtotal * (pct / 100);
+    } else if (discountMode === 'tiered') {
+      // Find the highest tier met
+      let appliedPct = 0;
+      const sortedTiers = [...quoteTiers].sort((a, b) => b.qty - a.qty);
+      for (const tier of sortedTiers) {
+        if (qty >= tier.qty) {
+          appliedPct = tier.pct;
+          break;
+        }
+      }
+      discountAmt = subtotal * (appliedPct / 100);
+    }
+
+    const total = subtotal - discountAmt;
+    const effectiveUnit = qty > 0 ? total / qty : 0;
+
+    previewUnitPrice.textContent = formatCurrency(unitPrice);
+    previewQty.textContent = qty;
+    previewSubtotal.textContent = formatCurrency(subtotal);
+    previewDiscount.textContent = `-${formatCurrency(discountAmt)}`;
+    previewTotal.textContent = formatCurrency(total);
+    previewEffectiveUnit.textContent = `${formatCurrency(effectiveUnit)} / unit`;
+  };
+
+  // Listeners for Quote updates
+  quoteQuantity.addEventListener('input', updateQuotePreview);
+  quoteDiscountPct.addEventListener('input', updateQuotePreview);
+  discountRadios.forEach(r => {
+    r.addEventListener('change', (e) => {
+      discountPercentBox.style.display = e.target.value === 'percent' ? 'flex' : 'none';
+      discountTieredBox.style.display = e.target.value === 'tiered' ? 'block' : 'none';
+      updateQuotePreview();
+    });
+  });
+
+  // Modals Open/Close
+  btnSettings.addEventListener('click', () => {
+    inputBizName.value = currentSettings.bizName || '';
+    inputBizEmail.value = currentSettings.bizEmail || '';
+    inputBizLogo.value = currentSettings.bizLogo || '';
+    modalSettings.classList.add('open');
+  });
+
+  btnSaveSettings.addEventListener('click', () => {
+    currentSettings = {
+      bizName: inputBizName.value.trim(),
+      bizEmail: inputBizEmail.value.trim(),
+      bizLogo: inputBizLogo.value.trim()
+    };
+    db.collection('settings').doc('global').set(currentSettings).then(() => {
+      modalSettings.classList.remove('open');
+      showToast('Settings Saved!');
+    });
+  });
+
+  if (btnQuote) {
+    btnQuote.addEventListener('click', () => {
+      renderTiers();
+      updateQuotePreview();
+      modalQuote.classList.add('open');
+    });
+  }
+
+  closeModals.forEach(btn => {
+    btn.addEventListener('click', () => {
+      btn.closest('.modal-overlay').classList.remove('open');
+    });
+  });
+
+  // PDF Generation
+  btnGeneratePdf.addEventListener('click', () => {
+    const qty = parseFloat(quoteQuantity.value) || 1;
+    const clientName = quoteClientName.value.trim() || 'Valued Client';
+    const prodName = productNameInput.value.trim() || `${themeDetails[activeTab].name} Custom Product`;
+    
+    // Recalculate everything
+    updateQuotePreview();
+    
+    const unitPrice = previewUnitPrice.textContent;
+    const subtotal = previewSubtotal.textContent;
+    const discount = previewDiscount.textContent;
+    const total = previewTotal.textContent;
+
+    // Generate beautiful HTML for the PDF
+    const quoteHtml = `
+      <div style="font-family: 'Inter', sans-serif; color: #111827; padding: 40px; background: white; width: 100%; box-sizing: border-box;">
+        <div style="display: flex; justify-content: space-between; border-bottom: 2px solid #e5e7eb; padding-bottom: 20px; margin-bottom: 30px;">
+          <div>
+            ${currentSettings.bizLogo ? `<img src="${currentSettings.bizLogo}" style="max-height: 60px; margin-bottom: 10px;" />` : ''}
+            <h1 style="margin: 0; font-size: 24px;">${escapeHtml(currentSettings.bizName || 'Creator Pricing Lab')}</h1>
+            <p style="margin: 5px 0 0; color: #6b7280;">${escapeHtml(currentSettings.bizEmail || '')}</p>
+          </div>
+          <div style="text-align: right;">
+            <h2 style="margin: 0; font-size: 28px; color: #374151; text-transform: uppercase;">Quote</h2>
+            <p style="margin: 5px 0 0; color: #6b7280;">Date: ${new Date().toLocaleDateString()}</p>
+          </div>
+        </div>
+
+        <div style="margin-bottom: 40px;">
+          <h3 style="margin: 0 0 10px; font-size: 16px; color: #6b7280; text-transform: uppercase;">Prepared For:</h3>
+          <p style="margin: 0; font-size: 18px; font-weight: 600;">${escapeHtml(clientName)}</p>
+        </div>
+
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 40px;">
+          <thead>
+            <tr style="background: #f3f4f6;">
+              <th style="text-align: left; padding: 12px; border-bottom: 2px solid #d1d5db;">Description</th>
+              <th style="text-align: right; padding: 12px; border-bottom: 2px solid #d1d5db;">Quantity</th>
+              <th style="text-align: right; padding: 12px; border-bottom: 2px solid #d1d5db;">Unit Price</th>
+              <th style="text-align: right; padding: 12px; border-bottom: 2px solid #d1d5db;">Amount</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; font-weight: 500;">${escapeHtml(prodName)}</td>
+              <td style="text-align: right; padding: 12px; border-bottom: 1px solid #e5e7eb;">${qty}</td>
+              <td style="text-align: right; padding: 12px; border-bottom: 1px solid #e5e7eb;">${unitPrice}</td>
+              <td style="text-align: right; padding: 12px; border-bottom: 1px solid #e5e7eb;">${subtotal}</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div style="display: flex; justify-content: flex-end;">
+          <div style="width: 300px;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+              <span style="color: #6b7280;">Subtotal</span>
+              <span>${subtotal}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 10px; color: #10b981;">
+              <span>Discount</span>
+              <span>${discount}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; padding-top: 15px; border-top: 2px solid #e5e7eb; font-size: 20px; font-weight: 700;">
+              <span>Total</span>
+              <span>${total}</span>
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top: 60px; padding-top: 20px; border-top: 1px solid #e5e7eb; text-align: center; color: #9ca3af; font-size: 14px;">
+          Thank you for your business! This quote is valid for 30 days.
+        </div>
+      </div>
+    `;
+
+    // Create a temporary container for html2pdf
+    const container = document.createElement('div');
+    container.innerHTML = quoteHtml;
+    
+    // We append to body temporarily so html2pdf can render it properly (hidden from view)
+    container.style.position = 'absolute';
+    container.style.top = '-9999px';
+    document.body.appendChild(container);
+
+    const opt = {
+      margin:       0,
+      filename:     `Quote_${clientName.replace(/\s+/g, '_')}_${prodName.replace(/\s+/g, '_')}.pdf`,
+      image:        { type: 'jpeg', quality: 0.98 },
+      html2canvas:  { scale: 2 },
+      jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+    };
+
+    html2pdf().set(opt).from(container).save().then(() => {
+      document.body.removeChild(container);
+      showToast('PDF Quote Downloaded!');
+      modalQuote.classList.remove('open');
+    });
+  });
+
+  // Re-trigger preview when recalculating from the main logic
+  const originalCalculate = calculate;
+  calculate = () => {
+    const res = originalCalculate();
+    if (modalQuote.classList.contains('open')) {
+      updateQuotePreview();
+    }
+    return res;
+  };
+
 });
