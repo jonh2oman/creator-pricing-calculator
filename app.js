@@ -1043,7 +1043,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Generate beautiful HTML for the PDF
     const quoteHtml = `
-      <div style="font-family: 'Inter', sans-serif; color: #111827; padding: 40px; background: white; width: 100%; box-sizing: border-box;">
+      <div style="font-family: 'Inter', sans-serif; color: #111827; padding: 40px; background: white; width: 800px; box-sizing: border-box;">
         <div style="display: flex; justify-content: space-between; border-bottom: 2px solid #e5e7eb; padding-bottom: 20px; margin-bottom: 30px;">
           <div>
             ${currentSettings.bizLogo ? `<img src="${currentSettings.bizLogo}" style="max-height: 60px; margin-bottom: 10px;" />` : ''}
@@ -1103,28 +1103,15 @@ document.addEventListener('DOMContentLoaded', () => {
       </div>
     `;
 
-    // Create a temporary container for html2pdf
-    const container = document.createElement('div');
-    container.innerHTML = quoteHtml;
-    
-    // Position it securely on screen but behind all other content
-    container.style.position = 'absolute';
-    container.style.top = '0';
-    container.style.left = '0';
-    container.style.width = '800px'; // Fixed width for consistent layout
-    container.style.zIndex = '-9999';
-    document.body.appendChild(container);
-
     const opt = {
       margin:       0,
       filename:     `Quote_${clientName.replace(/\s+/g, '_')}_${prodName.replace(/\s+/g, '_')}.pdf`,
       image:        { type: 'jpeg', quality: 0.98 },
-      html2canvas:  { scale: 2, useCORS: true },
+      html2canvas:  { scale: 2, useCORS: true, windowWidth: 800 },
       jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
     };
 
-    html2pdf().set(opt).from(container).save().then(() => {
-      document.body.removeChild(container);
+    html2pdf().set(opt).from(quoteHtml).save().then(() => {
       showToast('PDF Quote Downloaded!');
       modalQuote.classList.remove('open');
     });
