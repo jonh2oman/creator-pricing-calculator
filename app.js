@@ -1103,30 +1103,15 @@ document.addEventListener('DOMContentLoaded', () => {
       </div>
     `;
 
-    // Create a temporary container for html2pdf
-    const container = document.createElement('div');
-    container.innerHTML = quoteHtml;
-    
-    // We append to body temporarily so html2pdf can render it properly (hidden from view)
-    container.style.position = 'fixed';
-    container.style.top = '0';
-    container.style.left = '0';
-    container.style.width = '100%';
-    container.style.zIndex = '-9999';
-    container.style.opacity = '0';
-    container.style.pointerEvents = 'none';
-    document.body.appendChild(container);
-
     const opt = {
       margin:       0,
       filename:     `Quote_${clientName.replace(/\s+/g, '_')}_${prodName.replace(/\s+/g, '_')}.pdf`,
       image:        { type: 'jpeg', quality: 0.98 },
-      html2canvas:  { scale: 2 },
+      html2canvas:  { scale: 2, useCORS: true },
       jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
     };
 
-    html2pdf().set(opt).from(container).save().then(() => {
-      document.body.removeChild(container);
+    html2pdf().set(opt).from(quoteHtml).save().then(() => {
       showToast('PDF Quote Downloaded!');
       modalQuote.classList.remove('open');
     });
