@@ -1108,8 +1108,13 @@ document.addEventListener('DOMContentLoaded', () => {
     container.innerHTML = quoteHtml;
     
     // We append to body temporarily so html2pdf can render it properly (hidden from view)
-    container.style.position = 'absolute';
-    container.style.top = '-9999px';
+    container.style.position = 'fixed';
+    container.style.top = '0';
+    container.style.left = '0';
+    container.style.width = '100%';
+    container.style.zIndex = '-9999';
+    container.style.opacity = '0';
+    container.style.pointerEvents = 'none';
     document.body.appendChild(container);
 
     const opt = {
