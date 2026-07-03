@@ -1103,18 +1103,22 @@ document.addEventListener('DOMContentLoaded', () => {
       </div>
     `;
 
-    const opt = {
-      margin:       0,
-      filename:     `Quote_${clientName.replace(/\s+/g, '_')}_${prodName.replace(/\s+/g, '_')}.pdf`,
-      image:        { type: 'jpeg', quality: 0.98 },
-      html2canvas:  { scale: 2, useCORS: true, scrollX: 0, scrollY: 0, windowWidth: 800 },
-      jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
-    };
+    // Instead of using html2pdf which relies on canvas screenshots, 
+    // we use the browser's native, perfectly reliable print engine!
+    let printArea = document.getElementById('print-area');
+    if (!printArea) {
+      printArea = document.createElement('div');
+      printArea.id = 'print-area';
+      document.body.appendChild(printArea);
+    }
+    
+    printArea.innerHTML = quoteHtml;
 
-    html2pdf().set(opt).from(quoteHtml).save().then(() => {
-      showToast('PDF Quote Downloaded!');
-      modalQuote.classList.remove('open');
-    });
+    // Trigger the native print dialog
+    window.print();
+    
+    // Close modal
+    modalQuote.classList.remove('open');
   });
 
   // Re-trigger preview when recalculating from the main logic

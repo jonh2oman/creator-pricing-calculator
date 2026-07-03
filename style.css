@@ -613,6 +613,39 @@ h1, h2, h3, h4 {
   }
 }
 
+/* ========================================================= */
+/* Print Styles for Native PDF Generation */
+/* ========================================================= */
+
+#print-area {
+  display: none;
+}
+
+@media print {
+  /* Hide the main application entirely */
+  .app-container, .modal-overlay, header {
+    display: none !important;
+  }
+  
+  /* Show only the print area */
+  #print-area {
+    display: block !important;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+  }
+
+  /* Ensure background colors and images print properly */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  @page {
+    margin: 0.5in;
+  }
+}
+
 .chart-wrapper {
   position: relative;
   width: 130px;
