@@ -702,7 +702,11 @@ document.addEventListener('DOMContentLoaded', () => {
     editingProductId = null;
     productNameInput.value = '';
     
-    // Reset artwork state
+    // Reset quote fields & artwork state
+    if (quoteClientName) quoteClientName.value = '';
+    if (quoteJobNum) quoteJobNum.value = '';
+    if (quoteItemSize) quoteItemSize.value = '';
+    if (quoteImprintColors) quoteImprintColors.value = '';
     artworkDataUrl = null;
     if (quoteArtworkFile) quoteArtworkFile.value = '';
     if (artworkPreviewImg) artworkPreviewImg.src = '';
@@ -892,6 +896,10 @@ document.addEventListener('DOMContentLoaded', () => {
   const tierList = document.getElementById('tier-list');
   const btnGeneratePdf = document.getElementById('btn-generate-pdf');
 
+  const quoteJobNum = document.getElementById('quote-job-num');
+  const quoteItemSize = document.getElementById('quote-item-size');
+  const quoteImprintColors = document.getElementById('quote-imprint-colors');
+
   const quoteArtworkFile = document.getElementById('quote-artwork-file');
   const artworkPreviewContainer = document.getElementById('artwork-preview-container');
   const artworkPreviewImg = document.getElementById('artwork-preview-img');
@@ -1073,11 +1081,14 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // PDF Generation
+  // PDF Generation / Print Engine
   btnGeneratePdf.addEventListener('click', () => {
     const qty = parseFloat(quoteQuantity.value) || 1;
     const clientName = quoteClientName.value.trim() || 'Valued Client';
     const prodName = productNameInput.value.trim() || `${themeDetails[activeTab].name} Custom Product`;
+    const jobNum = quoteJobNum ? quoteJobNum.value.trim() : '';
+    const itemSize = quoteItemSize ? quoteItemSize.value.trim() : '';
+    const imprintColors = quoteImprintColors ? quoteImprintColors.value.trim() : '';
     
     // Recalculate everything
     updateQuotePreview();
@@ -1087,117 +1098,192 @@ document.addEventListener('DOMContentLoaded', () => {
     const discount = previewDiscount.textContent;
     const total = previewTotal.textContent;
 
-    // Optional Artwork Concept HTML
-    const artworkHtml = artworkDataUrl ? `
-      <div style="margin-top: 30px; margin-bottom: 30px; padding: 20px; border: 1px solid #e5e7eb; border-radius: 8px; background: #fafafa; page-break-inside: avoid;">
-        <h3 style="margin: 0 0 15px; font-size: 14px; color: #4b5563; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid #e5e7eb; padding-bottom: 5px;">Artwork Concept for Approval</h3>
-        <div style="display: flex; justify-content: center; align-items: center; min-height: 200px; max-height: 350px; background: #fff; border-radius: 6px; overflow: hidden; padding: 10px; border: 1px dashed #d1d5db;">
-          <img src="${artworkDataUrl}" style="max-width: 100%; max-height: 330px; object-fit: contain;" />
-        </div>
-      </div>
-    ` : '';
+    const proofDate = new Date().toLocaleDateString();
 
-    // Professional Sign-off Block
-    const approvalHtml = `
-      <div style="margin-top: 40px; border-top: 1px solid #e5e7eb; padding-top: 30px; page-break-inside: avoid;">
-        <div style="display: flex; justify-content: space-between; gap: 40px;">
-          <div style="flex: 1.2;">
-            <h4 style="margin: 0 0 10px; font-size: 14px; color: #4b5563; text-transform: uppercase; letter-spacing: 0.05em;">Client Approval & Sign-off</h4>
-            <p style="margin: 0 0 15px; font-size: 13px; color: #6b7280; line-height: 1.45;">
-              Please review the pricing and visual specifications. By signing below, you authorize us to proceed with production as described.
-            </p>
-            <div style="display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 500; color: #374151;">
-              <span style="display: inline-block; width: 14px; height: 14px; border: 1px solid #9ca3af; border-radius: 3px; background: #fff; margin-right: 6px;"></span>
-              I approve the pricing and artwork concept.
-            </div>
-          </div>
-          <div style="flex: 1; display: flex; flex-direction: column; gap: 25px; justify-content: flex-end; margin-bottom: 5px;">
-            <div style="display: flex; gap: 15px;">
-              <div style="flex: 2; border-bottom: 1px solid #9ca3af; height: 30px; position: relative;">
-                <span style="font-size: 10px; color: #9ca3af; position: absolute; bottom: -18px; left: 0;">Authorized Signature</span>
-              </div>
-              <div style="flex: 1; border-bottom: 1px solid #9ca3af; height: 30px; position: relative;">
-                <span style="font-size: 10px; color: #9ca3af; position: absolute; bottom: -18px; left: 0;">Date</span>
-              </div>
-            </div>
-            <div style="display: flex; gap: 15px; margin-top: 10px;">
-              <div style="flex: 1; border-bottom: 1px solid #9ca3af; height: 30px; position: relative;">
-                <span style="font-size: 10px; color: #9ca3af; position: absolute; bottom: -18px; left: 0;">Print Name</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    `;
-
-    // Generate beautiful HTML for the PDF
     const quoteHtml = `
-      <div style="font-family: 'Inter', sans-serif; color: #111827; padding: 40px; background: white; width: 800px; box-sizing: border-box;">
-        <div style="display: flex; justify-content: space-between; border-bottom: 2px solid #e5e7eb; padding-bottom: 20px; margin-bottom: 30px;">
+      <div style="font-family: 'Inter', system-ui, -apple-system, sans-serif; color: #1e293b; padding: 35px; background: #ffffff; width: 800px; box-sizing: border-box; font-size: 13px; line-height: 1.4;">
+        
+        <!-- Header Banner & Job Details -->
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #0284c7; padding-bottom: 15px; margin-bottom: 15px;">
           <div>
-            ${currentSettings.bizLogo ? `<img src="${currentSettings.bizLogo}" style="max-height: 60px; margin-bottom: 10px;" />` : ''}
-            <h1 style="margin: 0; font-size: 24px;">${escapeHtml(currentSettings.bizName || 'Creator Pricing Lab')}</h1>
-            <p style="margin: 5px 0 0; color: #6b7280;">${escapeHtml(currentSettings.bizEmail || '')}</p>
-          </div>
-          <div style="text-align: right;">
-            <h2 style="margin: 0; font-size: 28px; color: #374151; text-transform: uppercase;">Quote</h2>
-            <p style="margin: 5px 0 0; color: #6b7280;">Date: ${new Date().toLocaleDateString()}</p>
-          </div>
-        </div>
-
-        <div style="margin-bottom: 40px;">
-          <h3 style="margin: 0 0 10px; font-size: 16px; color: #6b7280; text-transform: uppercase;">Prepared For:</h3>
-          <p style="margin: 0; font-size: 18px; font-weight: 600;">${escapeHtml(clientName)}</p>
-        </div>
-
-        <table style="width: 100%; border-collapse: collapse; margin-bottom: 40px;">
-          <thead>
-            <tr style="background: #f3f4f6;">
-              <th style="text-align: left; padding: 12px; border-bottom: 2px solid #d1d5db;">Description</th>
-              <th style="text-align: right; padding: 12px; border-bottom: 2px solid #d1d5db;">Quantity</th>
-              <th style="text-align: right; padding: 12px; border-bottom: 2px solid #d1d5db;">Unit Price</th>
-              <th style="text-align: right; padding: 12px; border-bottom: 2px solid #d1d5db;">Amount</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; font-weight: 500;">${escapeHtml(prodName)}</td>
-              <td style="text-align: right; padding: 12px; border-bottom: 1px solid #e5e7eb;">${qty}</td>
-              <td style="text-align: right; padding: 12px; border-bottom: 1px solid #e5e7eb;">${unitPrice}</td>
-              <td style="text-align: right; padding: 12px; border-bottom: 1px solid #e5e7eb;">${subtotal}</td>
-            </tr>
-          </tbody>
-        </table>
-
-        <div style="display: flex; justify-content: flex-end; margin-bottom: 30px;">
-          <div style="width: 300px;">
-            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
-              <span style="color: #6b7280;">Subtotal</span>
-              <span>${subtotal}</span>
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 6px;">
+              ${currentSettings.bizLogo ? `<img src="${currentSettings.bizLogo}" style="max-height: 50px; object-fit: contain;" />` : ''}
+              <div>
+                <h1 style="margin: 0; font-size: 22px; font-weight: 800; color: #0f172a; text-transform: uppercase; letter-spacing: -0.02em;">
+                  ${escapeHtml(currentSettings.bizName || 'Creator Pricing Lab')}
+                </h1>
+                <p style="margin: 2px 0 0; color: #64748b; font-size: 12px;">${escapeHtml(currentSettings.bizEmail || '')}</p>
+              </div>
             </div>
-            <div style="display: flex; justify-content: space-between; margin-bottom: 10px; color: #10b981;">
-              <span>Discount</span>
-              <span>${discount}</span>
+          </div>
+          
+          <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; padding: 10px 16px; width: 260px;">
+            <div style="display: flex; justify-content: space-between; border-bottom: 1px dashed #cbd5e1; padding-bottom: 4px; margin-bottom: 4px; font-size: 12px;">
+              <strong style="color: #475569;">Form Title:</strong>
+              <span style="font-weight: 700; color: #0284c7;">Art Approval Form</span>
             </div>
-            <div style="display: flex; justify-content: space-between; padding-top: 15px; border-top: 2px solid #e5e7eb; font-size: 20px; font-weight: 700;">
-              <span>Total</span>
-              <span>${total}</span>
+            <div style="display: flex; justify-content: space-between; border-bottom: 1px dashed #cbd5e1; padding-bottom: 4px; margin-bottom: 4px; font-size: 11px;">
+              <strong style="color: #475569;">Job / PO #:</strong>
+              <span style="font-weight: 600;">${escapeHtml(jobNum || 'JOB-PROOF-01')}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; font-size: 11px;">
+              <strong style="color: #475569;">Proof Date:</strong>
+              <span>${proofDate}</span>
             </div>
           </div>
         </div>
 
-        ${artworkHtml}
+        <!-- Yellow Urgent Warning Banner -->
+        <div style="background: #fffde7; border: 1px solid #fbc02d; color: #795548; font-weight: 600; font-size: 11px; padding: 8px 12px; border-radius: 4px; text-align: center; margin-bottom: 18px;">
+          ⚡ <strong>PLEASE NOTE:</strong> Proofs should be reviewed and approved promptly. Any delays in art approval may impact your estimated ship date as production starts upon sign-off.
+        </div>
 
-        ${approvalHtml}
+        <!-- Prepared For & Specifications Grid -->
+        <div style="background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px 16px; margin-bottom: 20px;">
+          <div style="display: grid; grid-template-columns: 1.5fr 1fr 1fr 1fr; gap: 12px; font-size: 12px;">
+            <div>
+              <span style="font-size: 10px; text-transform: uppercase; color: #64748b; font-weight: 700; display: block; margin-bottom: 2px;">Prepared For</span>
+              <strong style="font-size: 13px; color: #0f172a;">${escapeHtml(clientName)}</strong>
+            </div>
+            <div>
+              <span style="font-size: 10px; text-transform: uppercase; color: #64748b; font-weight: 700; display: block; margin-bottom: 2px;">Item / Size Specs</span>
+              <span style="font-weight: 600; color: #0284c7;">${escapeHtml(itemSize || 'Custom Size')}</span>
+            </div>
+            <div>
+              <span style="font-size: 10px; text-transform: uppercase; color: #64748b; font-weight: 700; display: block; margin-bottom: 2px;">Print / Imprint Method</span>
+              <span style="font-weight: 600; color: #334155;">${escapeHtml(imprintColors || 'Full Color Vinyl')}</span>
+            </div>
+            <div>
+              <span style="font-size: 10px; text-transform: uppercase; color: #64748b; font-weight: 700; display: block; margin-bottom: 2px;">Quantity</span>
+              <strong style="font-size: 13px; color: #0f172a;">${qty} pcs</strong>
+            </div>
+          </div>
+        </div>
 
-        <div style="margin-top: 50px; padding-top: 20px; border-top: 1px solid #e5e7eb; text-align: center; color: #9ca3af; font-size: 14px;">
-          Thank you for your business! This quote is valid for 30 days.
+        <!-- Artwork Proof Display Area -->
+        <div style="border: 2px solid #cbd5e1; border-radius: 8px; padding: 16px; background: #ffffff; text-align: center; margin-bottom: 20px; page-break-inside: avoid;">
+          <div style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: #ef4444; letter-spacing: 0.05em; margin-bottom: 12px;">
+            Maximum Imprint / Artwork Concept Area
+          </div>
+          
+          <div style="display: flex; justify-content: center; align-items: center; min-height: 240px; max-height: 380px; background: #fafafa; border: 1px dashed #cbd5e1; border-radius: 6px; padding: 16px;">
+            ${artworkDataUrl 
+              ? `<img src="${artworkDataUrl}" style="max-width: 100%; max-height: 350px; object-fit: contain; box-shadow: 0 2px 8px rgba(0,0,0,0.06);" />` 
+              : `<div style="color: #94a3b8; font-style: italic;">No visual concept image attached to proof.</div>`}
+          </div>
+
+          <!-- Prominent Scale Warning Callout -->
+          <div style="margin-top: 12px; background: #fffbebf; border: 1px solid #fcd34d; color: #b45309; font-weight: 700; font-size: 12px; padding: 8px 12px; border-radius: 4px;">
+            ⚠️ PLEASE NOTE: ARTWORK MAY NOT BE TO SCALE UNLESS EXPLICITLY INDICATED.
+          </div>
+        </div>
+
+        <!-- Financial Summary Table -->
+        <div style="margin-bottom: 20px;">
+          <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+              <tr style="background: #f8fafc; border-top: 1px solid #e2e8f0; border-bottom: 2px solid #cbd5e1;">
+                <th style="text-align: left; padding: 8px 12px; font-size: 11px; text-transform: uppercase; color: #475569;">Description</th>
+                <th style="text-align: right; padding: 8px 12px; font-size: 11px; text-transform: uppercase; color: #475569;">Qty</th>
+                <th style="text-align: right; padding: 8px 12px; font-size: 11px; text-transform: uppercase; color: #475569;">Unit Price</th>
+                <th style="text-align: right; padding: 8px 12px; font-size: 11px; text-transform: uppercase; color: #475569;">Subtotal</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr style="border-bottom: 1px solid #f1f5f9;">
+                <td style="padding: 10px 12px; font-weight: 600;">${escapeHtml(prodName)}${itemSize ? ` (${escapeHtml(itemSize)})` : ''}</td>
+                <td style="text-align: right; padding: 10px 12px;">${qty}</td>
+                <td style="text-align: right; padding: 10px 12px;">${unitPrice}</td>
+                <td style="text-align: right; padding: 10px 12px;">${subtotal}</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div style="display: flex; justify-content: flex-end; margin-top: 10px;">
+            <div style="width: 280px; background: #f8fafc; border: 1px solid #e2e8f0; padding: 10px 14px; border-radius: 6px;">
+              <div style="display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 12px; color: #64748b;">
+                <span>Subtotal:</span>
+                <span>${subtotal}</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 12px; color: #16a34a;">
+                <span>Discount:</span>
+                <span>${discount}</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; border-top: 1px solid #cbd5e1; padding-top: 6px; font-size: 16px; font-weight: 800; color: #0284c7;">
+                <span>Total Amount:</span>
+                <span>${total}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Art Guidelines & Color/Size Variance Section (Two Boxes) -->
+        <div style="display: flex; gap: 14px; margin-bottom: 24px; page-break-inside: avoid;">
+          <!-- Art Guidelines -->
+          <div style="flex: 1; border: 1px dashed #0284c7; border-radius: 6px; padding: 10px 12px; background: #f0f9ff;">
+            <div style="font-weight: 700; font-size: 11px; color: #0284c7; text-transform: uppercase; margin-bottom: 6px; border-bottom: 1px solid #bae6fd; padding-bottom: 3px;">
+              Art & Print Guidelines
+            </div>
+            <ul style="margin: 0; padding-left: 14px; font-size: 10.5px; color: #334155; line-height: 1.35;">
+              <li><strong>Positive Imprint:</strong> 6pt Minimum font size.</li>
+              <li><strong>Negative / Knockout:</strong> 8pt Bold Minimum.</li>
+              <li><strong>Line Weights:</strong> Positive 0.5pt, Negative 1pt.</li>
+              <li>Vector art is required for exact cut & print fidelity.</li>
+            </ul>
+          </div>
+
+          <!-- Color & Size Variance Disclaimers -->
+          <div style="flex: 1.4; border: 1px dashed #cbd5e1; border-radius: 6px; padding: 10px 12px; background: #f8fafc;">
+            <div style="font-weight: 700; font-size: 11px; color: #475569; text-transform: uppercase; margin-bottom: 6px; border-bottom: 1px solid #e2e8f0; padding-bottom: 3px;">
+              Color & Scale Variance Disclaimers
+            </div>
+            <ul style="margin: 0; padding-left: 14px; font-size: 10px; color: #64748b; line-height: 1.35;">
+              <li>This proof is viewed on an RGB monitor; colors may vary slightly from actual physical print.</li>
+              <li>This proof is used to inspect layout, spelling, grammar & design elements.</li>
+              <li><strong>Scale Note:</strong> Dimensions noted on proof govern final size; image display is for visual representation only.</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- 3-Option Proof Approval Checkboxes & Signature Block -->
+        <div style="border: 1px solid #cbd5e1; border-radius: 6px; padding: 16px; background: #ffffff; page-break-inside: avoid;">
+          <div style="font-weight: 700; font-size: 12px; text-transform: uppercase; color: #0f172a; margin-bottom: 10px; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px;">
+            Client Proof Sign-off & Authorization
+          </div>
+
+          <!-- Three Checkboxes -->
+          <div style="display: flex; justify-content: space-between; gap: 10px; margin-bottom: 20px; font-size: 11px; font-weight: 600; color: #1e293b;">
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <span style="display: inline-block; width: 14px; height: 14px; border: 1.5px solid #0284c7; border-radius: 3px; background: #fff;"></span>
+              PROOF APPROVED AS-IS
+            </div>
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <span style="display: inline-block; width: 14px; height: 14px; border: 1.5px solid #64748b; border-radius: 3px; background: #fff;"></span>
+              APPROVED WITH CORRECTIONS
+            </div>
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <span style="display: inline-block; width: 14px; height: 14px; border: 1.5px solid #64748b; border-radius: 3px; background: #fff;"></span>
+              REVISED PROOF REQUESTED
+            </div>
+          </div>
+
+          <!-- Signature and Date Lines -->
+          <div style="display: flex; justify-content: space-between; gap: 30px; margin-top: 15px;">
+            <div style="flex: 2; border-bottom: 1px solid #000; position: relative; height: 28px;">
+              <span style="font-size: 10px; color: #64748b; position: absolute; bottom: -18px; left: 0;">Authorized Signature</span>
+            </div>
+            <div style="flex: 1; border-bottom: 1px solid #000; position: relative; height: 28px;">
+              <span style="font-size: 10px; color: #64748b; position: absolute; bottom: -18px; left: 0;">Date</span>
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top: 25px; text-align: center; color: #94a3b8; font-size: 11px;">
+          Generated with Creator Pricing Lab • Thank you for your business!
         </div>
       </div>
     `;
 
-    // Instead of using html2pdf which relies on canvas screenshots, 
-    // we use the browser's native, perfectly reliable print engine!
     let printArea = document.getElementById('print-area');
     if (!printArea) {
       printArea = document.createElement('div');
@@ -1207,7 +1293,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     printArea.innerHTML = quoteHtml;
 
-    // Trigger the native print dialog
+    // Trigger native print dialog
     window.print();
     
     // Close modal

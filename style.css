@@ -1164,3 +1164,15 @@ input[type="file"]#quote-artwork-file::-webkit-file-upload-button:hover {
   transform: scale(1.1);
 }
 
+.scale-disclaimer-badge {
+  margin-top: 0.75rem;
+  padding: 0.6rem 0.85rem;
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  border-radius: 0.5rem;
+  color: #fbbf24;
+  font-size: 0.78rem;
+  line-height: 1.35;
+  text-align: center;
+}
+

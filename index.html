@@ -432,13 +432,27 @@
       <div class="modal-body">
         <div class="quote-layout">
           <div class="quote-config">
-            <h3>Client Details</h3>
+            <h3>Client & Job Details</h3>
             <div class="input-group">
               <label for="quote-client-name">Client Name</label>
-              <input type="text" id="quote-client-name" placeholder="Client Name">
+              <input type="text" id="quote-client-name" placeholder="e.g. Sarah Lush - Dogfadders">
+            </div>
+            <div class="input-group" style="margin-top: 0.75rem;">
+              <label for="quote-job-num">Job # / PO # / Proof #</label>
+              <input type="text" id="quote-job-num" placeholder="e.g. JOB-9825 / PO-4401">
             </div>
             
-            <h3 style="margin-top: 1rem;">Order Details</h3>
+            <h3 style="margin-top: 1.25rem;">Product & Artwork Specifications</h3>
+            <div class="input-group">
+              <label for="quote-item-size">Sticker / Item Size (Freeform)</label>
+              <input type="text" id="quote-item-size" placeholder="e.g. 3&quot; x 2&quot; Die-Cut, 4&quot; Round, 150g Print">
+            </div>
+            <div class="input-group" style="margin-top: 0.75rem;">
+              <label for="quote-imprint-colors">Imprint Colors / Print Method</label>
+              <input type="text" id="quote-imprint-colors" placeholder="e.g. Full Color Vinyl / Matte Laminate">
+            </div>
+
+            <h3 style="margin-top: 1.25rem;">Order Details</h3>
             <div class="input-group">
               <label for="quote-quantity">Quantity</label>
               <input type="number" id="quote-quantity" value="1" min="1">
@@ -463,7 +477,7 @@
               <button id="btn-add-tier" class="btn btn-text" style="padding: 0; margin-top: 0.5rem; color: var(--accent);">+ Add Tier</button>
             </div>
 
-            <h3 style="margin-top: 1.5rem;">Artwork Concept</h3>
+            <h3 style="margin-top: 1.25rem;">Artwork Concept</h3>
             <div class="input-group">
               <label for="quote-artwork-file">Upload Artwork (Image)</label>
               <input type="file" id="quote-artwork-file" accept="image/*">
@@ -500,10 +514,13 @@
             </div>
 
             <div id="artwork-preview-container" class="artwork-preview-container" style="display: none;">
-              <h4 style="font-size: 0.85rem; color: var(--text-muted); margin-top: 1.25rem; margin-bottom: 0.5rem;">Artwork Concept</h4>
+              <h4 style="font-size: 0.85rem; color: var(--text-muted); margin-top: 1.25rem; margin-bottom: 0.5rem;">Artwork Concept Proof</h4>
               <div class="artwork-preview-box">
                 <img id="artwork-preview-img" src="" alt="Artwork Concept Preview">
                 <button id="btn-remove-artwork" class="icon-btn remove-artwork-btn" aria-label="Remove artwork" type="button">&times;</button>
+              </div>
+              <div class="scale-disclaimer-badge">
+                ⚠️ <strong>Note:</strong> Artwork image may not be to scale unless indicated.
               </div>
             </div>
           </div>
