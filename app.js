@@ -78,6 +78,37 @@ document.addEventListener('DOMContentLoaded', () => {
   const authError = document.getElementById('auth-error');
   let isSignUp = false;
 
+  // LocalStorage Helpers
+  const loadLocalSettings = () => {
+    try {
+      const saved = localStorage.getItem('creator_settings');
+      return saved ? JSON.parse(saved) : { bizName: '', bizEmail: '', bizLogo: '' };
+    } catch(e) {
+      return { bizName: '', bizEmail: '', bizLogo: '' };
+    }
+  };
+
+  const saveLocalSettings = (settings) => {
+    try {
+      localStorage.setItem('creator_settings', JSON.stringify(settings));
+    } catch(e) {}
+  };
+
+  const loadLocalProducts = () => {
+    try {
+      const saved = localStorage.getItem('creator_products');
+      return saved ? JSON.parse(saved) : [];
+    } catch(e) {
+      return [];
+    }
+  };
+
+  const saveLocalProducts = (prods) => {
+    try {
+      localStorage.setItem('creator_products', JSON.stringify(prods));
+    } catch(e) {}
+  };
+
   // Listen to Auth State
   auth.onAuthStateChanged(user => {
     currentUser = user;
@@ -87,23 +118,35 @@ document.addEventListener('DOMContentLoaded', () => {
       authUserEmail.style.display = 'inline';
       btnLogin.style.display = 'none';
       btnLogout.style.display = 'inline-block';
-      btnSettingsHeader.style.display = 'inline-flex';
       
-      // Load user products
+      // Load user products from Firestore
       unsubscribeProducts = db.collection('users').doc(user.uid).collection('products').orderBy('createdAt', 'desc').onSnapshot(snapshot => {
-        products = [];
+        const cloudProducts = [];
         snapshot.forEach(doc => {
-          products.push({ id: doc.id, ...doc.data() });
+          cloudProducts.push({ id: doc.id, ...doc.data() });
         });
-        renderLibraryList();
+
+        // Migrate local products if cloud is empty
+        const localProducts = loadLocalProducts();
+        if (cloudProducts.length === 0 && localProducts.length > 0) {
+          localProducts.forEach(p => {
+            const { id, ...data } = p;
+            db.collection('users').doc(user.uid).collection('products').add(data);
+          });
+        } else {
+          products = cloudProducts;
+          saveLocalProducts(products);
+          renderLibraryList();
+        }
       });
 
-      // Load user settings
+      // Load user settings from Firestore
       unsubscribeSettings = db.collection('users').doc(user.uid).collection('settings').doc('global').onSnapshot(doc => {
         if (doc.exists) {
           currentSettings = doc.data();
-        } else {
-          currentSettings = { bizName: '', bizEmail: '', bizLogo: '' };
+          saveLocalSettings(currentSettings);
+        } else if (currentSettings.bizName || currentSettings.bizEmail || currentSettings.bizLogo) {
+          db.collection('users').doc(user.uid).collection('settings').doc('global').set(currentSettings);
         }
       });
       
@@ -112,13 +155,12 @@ document.addEventListener('DOMContentLoaded', () => {
       authUserEmail.style.display = 'none';
       btnLogin.style.display = 'inline-block';
       btnLogout.style.display = 'none';
-      btnSettingsHeader.style.display = 'none';
       
       if (unsubscribeProducts) unsubscribeProducts();
       if (unsubscribeSettings) unsubscribeSettings();
       
-      products = [];
-      currentSettings = { bizName: '', bizEmail: '', bizLogo: '' };
+      products = loadLocalProducts();
+      currentSettings = loadLocalSettings();
       renderLibraryList();
     }
   });
@@ -581,35 +623,62 @@ document.addEventListener('DOMContentLoaded', () => {
     const currentResults = calculate();
     const inputs = getProductInputs(activeTab);
 
-    if (!currentUser) {
-      showToast('Please sign in to save products.');
-      return;
-    }
-
-    if (editingProductId) {
-      // Edit mode
-      db.collection('users').doc(currentUser.uid).collection('products').doc(editingProductId).update({
-        name,
-        inputs,
-        rrp: currentResults.rrp,
-        updatedAt: new Date().toISOString()
-      }).then(() => {
-        showToast(`Updated "${name}" in library.`);
-      });
+    if (currentUser) {
+      if (editingProductId) {
+        // Edit mode in Cloud
+        db.collection('users').doc(currentUser.uid).collection('products').doc(editingProductId).update({
+          name,
+          inputs,
+          rrp: currentResults.rrp,
+          updatedAt: new Date().toISOString()
+        }).then(() => {
+          showToast(`Updated "${name}" in cloud library.`);
+        });
+      } else {
+        // New save in Cloud
+        const newProduct = {
+          name,
+          type: activeTab,
+          inputs,
+          rrp: currentResults.rrp,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
+        db.collection('users').doc(currentUser.uid).collection('products').add(newProduct).then(docRef => {
+          editingProductId = docRef.id;
+          showToast(`Saved "${name}" to cloud library.`);
+        });
+      }
     } else {
-      // New save
-      const newProduct = {
-        name,
-        type: activeTab,
-        inputs,
-        rrp: currentResults.rrp,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
-      db.collection('users').doc(currentUser.uid).collection('products').add(newProduct).then(docRef => {
-        editingProductId = docRef.id;
-        showToast(`Saved "${name}" to library.`);
-      });
+      // Local fallback when signed out
+      if (editingProductId) {
+        const idx = products.findIndex(p => p.id === editingProductId);
+        if (idx !== -1) {
+          products[idx] = {
+            ...products[idx],
+            name,
+            inputs,
+            rrp: currentResults.rrp,
+            updatedAt: new Date().toISOString()
+          };
+          showToast(`Updated "${name}" in local library.`);
+        }
+      } else {
+        const newProduct = {
+          id: 'local_' + Date.now(),
+          name,
+          type: activeTab,
+          inputs,
+          rrp: currentResults.rrp,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
+        products.unshift(newProduct);
+        editingProductId = newProduct.id;
+        showToast(`Saved "${name}" to local library.`);
+      }
+      saveLocalProducts(products);
+      renderLibraryList();
     }
   };
 
@@ -635,14 +704,26 @@ document.addEventListener('DOMContentLoaded', () => {
     const name = product ? product.name : 'Product';
     
     if (confirm(`Are you sure you want to delete "${name}"?`)) {
-      db.collection('users').doc(currentUser.uid).collection('products').doc(id).delete().then(() => {
+      if (currentUser) {
+        db.collection('users').doc(currentUser.uid).collection('products').doc(id).delete().then(() => {
+          if (editingProductId === id) {
+            editingProductId = null;
+            productNameInput.value = '';
+            btnReset.click();
+          }
+          showToast(`Deleted "${name}" from library.`);
+        });
+      } else {
+        products = products.filter(p => p.id !== id);
+        saveLocalProducts(products);
         if (editingProductId === id) {
           editingProductId = null;
           productNameInput.value = '';
           btnReset.click();
         }
-        showToast(`Deleted "${name}" from library.`);
-      });
+        renderLibraryList();
+        showToast(`Deleted "${name}" from local library.`);
+      }
     }
   };
 
@@ -902,8 +983,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const inputBizName = document.getElementById('settings-biz-name');
   const inputBizEmail = document.getElementById('settings-biz-email');
-  const inputBizLogo = document.getElementById('settings-biz-logo');
+  const inputBizLogoUrl = document.getElementById('settings-biz-logo');
+  const inputBizLogoFile = document.getElementById('settings-biz-logo-file');
+  const settingsLogoPreviewContainer = document.getElementById('settings-logo-preview-container');
+  const settingsLogoPreviewImg = document.getElementById('settings-logo-preview-img');
+  const btnClearLogo = document.getElementById('btn-clear-logo');
   const btnSaveSettings = document.getElementById('btn-save-settings');
+  let settingsLogoDataUrl = '';
 
   const quoteClientName = document.getElementById('quote-client-name');
   const quoteQuantity = document.getElementById('quote-quantity');
@@ -1064,28 +1150,92 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // Business Logo upload & URL helper functions
+  const showLogoPreview = (src) => {
+    if (settingsLogoPreviewImg && settingsLogoPreviewContainer) {
+      settingsLogoPreviewImg.src = src;
+      settingsLogoPreviewContainer.style.display = 'flex';
+    }
+  };
+
+  const hideLogoPreview = () => {
+    settingsLogoDataUrl = '';
+    if (inputBizLogoFile) inputBizLogoFile.value = '';
+    if (inputBizLogoUrl) inputBizLogoUrl.value = '';
+    if (settingsLogoPreviewContainer) settingsLogoPreviewContainer.style.display = 'none';
+    if (settingsLogoPreviewImg) settingsLogoPreviewImg.src = '';
+  };
+
+  if (btnClearLogo) {
+    btnClearLogo.addEventListener('click', hideLogoPreview);
+  }
+
+  if (inputBizLogoFile) {
+    inputBizLogoFile.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        if (!file.type.startsWith('image/')) {
+          showToast('Please select a valid image file for your logo.');
+          inputBizLogoFile.value = '';
+          return;
+        }
+        const reader = new FileReader();
+        reader.onload = (evt) => {
+          settingsLogoDataUrl = evt.target.result;
+          if (inputBizLogoUrl) inputBizLogoUrl.value = '';
+          showLogoPreview(settingsLogoDataUrl);
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+  }
+
+  if (inputBizLogoUrl) {
+    inputBizLogoUrl.addEventListener('input', (e) => {
+      const url = e.target.value.trim();
+      if (url) {
+        settingsLogoDataUrl = url;
+        if (inputBizLogoFile) inputBizLogoFile.value = '';
+        showLogoPreview(url);
+      } else if (!inputBizLogoFile || !inputBizLogoFile.files.length) {
+        hideLogoPreview();
+      }
+    });
+  }
+
   // Modals Open/Close
   btnSettings.addEventListener('click', () => {
     inputBizName.value = currentSettings.bizName || '';
     inputBizEmail.value = currentSettings.bizEmail || '';
-    inputBizLogo.value = currentSettings.bizLogo || '';
+    settingsLogoDataUrl = currentSettings.bizLogo || '';
+    if (inputBizLogoUrl) inputBizLogoUrl.value = (settingsLogoDataUrl && !settingsLogoDataUrl.startsWith('data:')) ? settingsLogoDataUrl : '';
+    if (settingsLogoDataUrl) {
+      showLogoPreview(settingsLogoDataUrl);
+    } else {
+      hideLogoPreview();
+    }
     modalSettings.classList.add('open');
   });
 
   btnSaveSettings.addEventListener('click', () => {
+    const logoToSave = settingsLogoDataUrl || (inputBizLogoUrl ? inputBizLogoUrl.value.trim() : '');
     currentSettings = {
       bizName: inputBizName.value.trim(),
       bizEmail: inputBizEmail.value.trim(),
-      bizLogo: inputBizLogo.value.trim()
+      bizLogo: logoToSave
     };
-    if (!currentUser) {
-      showToast('Please sign in to save settings.');
-      return;
-    }
-    db.collection('users').doc(currentUser.uid).collection('settings').doc('global').set(currentSettings).then(() => {
+
+    saveLocalSettings(currentSettings);
+
+    if (currentUser) {
+      db.collection('users').doc(currentUser.uid).collection('settings').doc('global').set(currentSettings).then(() => {
+        modalSettings.classList.remove('open');
+        showToast('Settings saved to cloud!');
+      });
+    } else {
       modalSettings.classList.remove('open');
-      showToast('Settings Saved!');
-    });
+      showToast('Settings saved locally!');
+    }
   });
 
   if (btnQuote) {

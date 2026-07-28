@@ -35,7 +35,7 @@
           <button id="btn-login" class="btn btn-primary" style="padding: 0.5rem 1rem; font-size: 0.85rem;">Sign In</button>
           <button id="btn-logout" class="btn btn-secondary" style="padding: 0.5rem 1rem; font-size: 0.85rem; display: none;">Sign Out</button>
         </div>
-        <button id="btn-settings" class="icon-btn" aria-label="Settings" style="margin-right: 1rem; display: none;">
+        <button id="btn-settings" class="icon-btn" aria-label="Settings" title="Business Settings" style="margin-right: 1rem;">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="12" cy="12" r="3"></circle>
             <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
@@ -418,8 +418,19 @@
             <input type="email" id="settings-biz-email" placeholder="contact@example.com">
           </div>
           <div class="input-group">
-            <label for="settings-biz-logo">Logo URL</label>
+            <label for="settings-biz-logo-file">Upload Business Logo (Image File)</label>
+            <input type="file" id="settings-biz-logo-file" accept="image/*">
+          </div>
+          <div class="input-group" style="margin-top: 0.5rem;">
+            <label for="settings-biz-logo">Or Logo Image URL</label>
             <input type="url" id="settings-biz-logo" placeholder="https://example.com/logo.png">
+          </div>
+          <div id="settings-logo-preview-container" style="display: none; margin-top: 0.75rem; border: 1px dashed var(--border-color); padding: 0.75rem; border-radius: 0.4rem; align-items: center; gap: 1rem;">
+            <img id="settings-logo-preview-img" src="" alt="Business Logo Preview" style="max-height: 60px; max-width: 140px; object-fit: contain; background: #ffffff; border-radius: 4px; padding: 4px;">
+            <div style="display: flex; flex-direction: column; gap: 0.25rem;">
+              <span style="font-size: 0.8rem; color: var(--text-muted);">Logo Preview</span>
+              <button id="btn-clear-logo" class="btn btn-text" style="color: #ef4444; padding: 0; text-align: left; font-size: 0.8rem;">Remove Logo</button>
+            </div>
           </div>
         </div>
       </div>
