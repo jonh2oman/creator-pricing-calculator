@@ -624,27 +624,36 @@ h1, h2, h3, h4 {
 }
 
 @media print {
+  @page {
+    margin: 0;
+    size: auto;
+  }
+
+  body {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+
   /* Hide the main application entirely */
   .app-container, .modal-overlay, header {
     display: none !important;
   }
   
-  /* Show only the print area */
+  /* Show only the print area with internal margin spacing */
   #print-area {
     display: block !important;
-    width: 100%;
-    margin: 0;
-    padding: 0;
+    width: 100% !important;
+    margin: 0 auto !important;
+    padding: 10mm 12mm !important;
+    box-sizing: border-box !important;
   }
 
   /* Ensure background colors and images print properly */
   * {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
-  }
-
-  @page {
-    margin: 0.5in;
   }
 }
 
