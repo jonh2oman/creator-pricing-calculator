@@ -707,6 +707,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (quoteJobNum) quoteJobNum.value = '';
     if (quoteItemSize) quoteItemSize.value = '';
     if (quoteImprintColors) quoteImprintColors.value = '';
+    if (quoteProofNotes) quoteProofNotes.value = '';
     artworkDataUrl = null;
     if (quoteArtworkFile) quoteArtworkFile.value = '';
     if (artworkPreviewImg) artworkPreviewImg.src = '';
@@ -899,6 +900,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const quoteJobNum = document.getElementById('quote-job-num');
   const quoteItemSize = document.getElementById('quote-item-size');
   const quoteImprintColors = document.getElementById('quote-imprint-colors');
+  const quoteProofNotes = document.getElementById('quote-proof-notes');
 
   const quoteArtworkFile = document.getElementById('quote-artwork-file');
   const artworkPreviewContainer = document.getElementById('artwork-preview-container');
@@ -1089,6 +1091,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const jobNum = quoteJobNum ? quoteJobNum.value.trim() : '';
     const itemSize = quoteItemSize ? quoteItemSize.value.trim() : '';
     const imprintColors = quoteImprintColors ? quoteImprintColors.value.trim() : '';
+    const proofNotes = quoteProofNotes ? quoteProofNotes.value.trim() : '';
     
     // Recalculate everything
     updateQuotePreview();
@@ -1218,7 +1221,7 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>
 
         <!-- Art Guidelines & Color/Size Variance Section (Two Boxes) -->
-        <div style="display: flex; gap: 14px; margin-bottom: 24px; page-break-inside: avoid;">
+        <div style="display: flex; gap: 14px; margin-bottom: 20px; page-break-inside: avoid;">
           <!-- Art Guidelines -->
           <div style="flex: 1; border: 1px dashed #0284c7; border-radius: 6px; padding: 10px 12px; background: #f0f9ff;">
             <div style="font-weight: 700; font-size: 11px; color: #0284c7; text-transform: uppercase; margin-bottom: 6px; border-bottom: 1px solid #bae6fd; padding-bottom: 3px;">
@@ -1242,6 +1245,22 @@ document.addEventListener('DOMContentLoaded', () => {
               <li>This proof is used to inspect layout, spelling, grammar & design elements.</li>
               <li><strong>Scale Note:</strong> Dimensions noted on proof govern final size; image display is for visual representation only.</li>
             </ul>
+          </div>
+        </div>
+
+        <!-- Requested Changes & Proof Notes Box -->
+        <div style="border: 1px dashed #cbd5e1; border-radius: 6px; padding: 12px 14px; background: #fafafa; margin-bottom: 20px; page-break-inside: avoid;">
+          <div style="font-weight: 700; font-size: 11px; text-transform: uppercase; color: #475569; margin-bottom: 6px; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px; display: flex; justify-content: space-between; align-items: center;">
+            <span>Requested Changes / Proof Notes</span>
+            <span style="font-size: 10px; font-weight: 400; color: #64748b; font-style: italic;">(For client handwritten notes or pre-filled instructions)</span>
+          </div>
+          <div style="min-height: 48px; font-size: 11px; color: #334155; line-height: 1.5;">
+            ${proofNotes ? escapeHtml(proofNotes).replace(/\n/g, '<br>') : `
+              <div style="color: #cbd5e1; font-style: italic; padding-top: 4px; line-height: 1.8;">
+                ____________________________________________________________________________________________________<br>
+                ____________________________________________________________________________________________________
+              </div>
+            `}
           </div>
         </div>
 
