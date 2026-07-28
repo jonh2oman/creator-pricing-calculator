@@ -1079,3 +1079,88 @@ h1, h2, h3, h4 {
   }
 }
 
+/* ==========================================================================
+   Artwork Concept Upload & Preview Styles
+   ========================================================================== */
+
+input[type="file"]#quote-artwork-file {
+  padding: 0.5rem 0;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+input[type="file"]#quote-artwork-file::-webkit-file-upload-button {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-color);
+  border-radius: 0.4rem;
+  color: var(--text-main);
+  padding: 0.5rem 0.75rem;
+  cursor: pointer;
+  margin-right: 0.75rem;
+  font-family: var(--font-header);
+  font-weight: 500;
+  font-size: 0.85rem;
+  transition: var(--transition-smooth);
+}
+
+input[type="file"]#quote-artwork-file::-webkit-file-upload-button:hover {
+  background: var(--accent);
+  color: var(--text-inverse);
+  box-shadow: var(--shadow-glow);
+}
+
+.artwork-preview-container {
+  display: flex;
+  flex-direction: column;
+}
+
+.artwork-preview-box {
+  position: relative;
+  border: 1px dashed var(--border-color);
+  border-radius: 0.75rem;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 160px;
+  padding: 0.75rem;
+  transition: var(--transition-smooth);
+}
+
+.artwork-preview-box:hover {
+  border-color: var(--accent);
+}
+
+.artwork-preview-box img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  border-radius: 0.35rem;
+}
+
+.remove-artwork-btn {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  background: rgba(13, 14, 18, 0.8) !important;
+  color: var(--danger) !important;
+  border-radius: 50% !important;
+  width: 1.75rem !important;
+  height: 1.75rem !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border: 1px solid rgba(239, 68, 68, 0.3) !important;
+  font-size: 1.15rem !important;
+  cursor: pointer;
+  padding: 0 !important;
+  transition: var(--transition-smooth);
+}
+
+.remove-artwork-btn:hover {
+  background: var(--danger) !important;
+  color: #fff !important;
+  transform: scale(1.1);
+}
+

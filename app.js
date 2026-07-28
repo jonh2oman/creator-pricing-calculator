@@ -701,6 +701,13 @@ document.addEventListener('DOMContentLoaded', () => {
     form.reset();
     editingProductId = null;
     productNameInput.value = '';
+    
+    // Reset artwork state
+    artworkDataUrl = null;
+    if (quoteArtworkFile) quoteArtworkFile.value = '';
+    if (artworkPreviewImg) artworkPreviewImg.src = '';
+    if (artworkPreviewContainer) artworkPreviewContainer.style.display = 'none';
+    
     calculate();
     renderLibraryList();
     showToast('Form inputs reset to defaults.');
@@ -885,6 +892,12 @@ document.addEventListener('DOMContentLoaded', () => {
   const tierList = document.getElementById('tier-list');
   const btnGeneratePdf = document.getElementById('btn-generate-pdf');
 
+  const quoteArtworkFile = document.getElementById('quote-artwork-file');
+  const artworkPreviewContainer = document.getElementById('artwork-preview-container');
+  const artworkPreviewImg = document.getElementById('artwork-preview-img');
+  const btnRemoveArtwork = document.getElementById('btn-remove-artwork');
+  let artworkDataUrl = null;
+
   const previewUnitPrice = document.getElementById('preview-unit-price');
   const previewQty = document.getElementById('preview-qty');
   const previewSubtotal = document.getElementById('preview-subtotal');
@@ -943,7 +956,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const updateQuotePreview = () => {
     const qty = parseFloat(quoteQuantity.value) || 1;
     const baseResults = calculate(); // Get current RRP from the main app logic
-    const unitPrice = baseResults ? baseResults.rrp : 0;
+    const unitPrice = baseResults ? Math.round(baseResults.rrp * 100) / 100 : 0;
     const subtotal = unitPrice * qty;
 
     let discountMode = 'none';
@@ -988,6 +1001,39 @@ document.addEventListener('DOMContentLoaded', () => {
       updateQuotePreview();
     });
   });
+
+  // Artwork upload event listener
+  if (quoteArtworkFile) {
+    quoteArtworkFile.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        if (!file.type.startsWith('image/')) {
+          showToast('Please upload a valid image file.');
+          quoteArtworkFile.value = '';
+          return;
+        }
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          artworkDataUrl = event.target.result;
+          if (artworkPreviewImg) artworkPreviewImg.src = artworkDataUrl;
+          if (artworkPreviewContainer) artworkPreviewContainer.style.display = 'block';
+          updateQuotePreview();
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+  }
+
+  if (btnRemoveArtwork) {
+    btnRemoveArtwork.addEventListener('click', () => {
+      artworkDataUrl = null;
+      if (quoteArtworkFile) quoteArtworkFile.value = '';
+      if (artworkPreviewImg) artworkPreviewImg.src = '';
+      if (artworkPreviewContainer) artworkPreviewContainer.style.display = 'none';
+      updateQuotePreview();
+      showToast('Artwork concept removed.');
+    });
+  }
 
   // Modals Open/Close
   btnSettings.addEventListener('click', () => {
@@ -1041,6 +1087,49 @@ document.addEventListener('DOMContentLoaded', () => {
     const discount = previewDiscount.textContent;
     const total = previewTotal.textContent;
 
+    // Optional Artwork Concept HTML
+    const artworkHtml = artworkDataUrl ? `
+      <div style="margin-top: 30px; margin-bottom: 30px; padding: 20px; border: 1px solid #e5e7eb; border-radius: 8px; background: #fafafa; page-break-inside: avoid;">
+        <h3 style="margin: 0 0 15px; font-size: 14px; color: #4b5563; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid #e5e7eb; padding-bottom: 5px;">Artwork Concept for Approval</h3>
+        <div style="display: flex; justify-content: center; align-items: center; min-height: 200px; max-height: 350px; background: #fff; border-radius: 6px; overflow: hidden; padding: 10px; border: 1px dashed #d1d5db;">
+          <img src="${artworkDataUrl}" style="max-width: 100%; max-height: 330px; object-fit: contain;" />
+        </div>
+      </div>
+    ` : '';
+
+    // Professional Sign-off Block
+    const approvalHtml = `
+      <div style="margin-top: 40px; border-top: 1px solid #e5e7eb; padding-top: 30px; page-break-inside: avoid;">
+        <div style="display: flex; justify-content: space-between; gap: 40px;">
+          <div style="flex: 1.2;">
+            <h4 style="margin: 0 0 10px; font-size: 14px; color: #4b5563; text-transform: uppercase; letter-spacing: 0.05em;">Client Approval & Sign-off</h4>
+            <p style="margin: 0 0 15px; font-size: 13px; color: #6b7280; line-height: 1.45;">
+              Please review the pricing and visual specifications. By signing below, you authorize us to proceed with production as described.
+            </p>
+            <div style="display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 500; color: #374151;">
+              <span style="display: inline-block; width: 14px; height: 14px; border: 1px solid #9ca3af; border-radius: 3px; background: #fff; margin-right: 6px;"></span>
+              I approve the pricing and artwork concept.
+            </div>
+          </div>
+          <div style="flex: 1; display: flex; flex-direction: column; gap: 25px; justify-content: flex-end; margin-bottom: 5px;">
+            <div style="display: flex; gap: 15px;">
+              <div style="flex: 2; border-bottom: 1px solid #9ca3af; height: 30px; position: relative;">
+                <span style="font-size: 10px; color: #9ca3af; position: absolute; bottom: -18px; left: 0;">Authorized Signature</span>
+              </div>
+              <div style="flex: 1; border-bottom: 1px solid #9ca3af; height: 30px; position: relative;">
+                <span style="font-size: 10px; color: #9ca3af; position: absolute; bottom: -18px; left: 0;">Date</span>
+              </div>
+            </div>
+            <div style="display: flex; gap: 15px; margin-top: 10px;">
+              <div style="flex: 1; border-bottom: 1px solid #9ca3af; height: 30px; position: relative;">
+                <span style="font-size: 10px; color: #9ca3af; position: absolute; bottom: -18px; left: 0;">Print Name</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+
     // Generate beautiful HTML for the PDF
     const quoteHtml = `
       <div style="font-family: 'Inter', sans-serif; color: #111827; padding: 40px; background: white; width: 800px; box-sizing: border-box;">
@@ -1080,7 +1169,7 @@ document.addEventListener('DOMContentLoaded', () => {
           </tbody>
         </table>
 
-        <div style="display: flex; justify-content: flex-end;">
+        <div style="display: flex; justify-content: flex-end; margin-bottom: 30px;">
           <div style="width: 300px;">
             <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
               <span style="color: #6b7280;">Subtotal</span>
@@ -1097,7 +1186,11 @@ document.addEventListener('DOMContentLoaded', () => {
           </div>
         </div>
 
-        <div style="margin-top: 60px; padding-top: 20px; border-top: 1px solid #e5e7eb; text-align: center; color: #9ca3af; font-size: 14px;">
+        ${artworkHtml}
+
+        ${approvalHtml}
+
+        <div style="margin-top: 50px; padding-top: 20px; border-top: 1px solid #e5e7eb; text-align: center; color: #9ca3af; font-size: 14px;">
           Thank you for your business! This quote is valid for 30 days.
         </div>
       </div>
