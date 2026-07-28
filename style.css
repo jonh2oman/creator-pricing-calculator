@@ -479,7 +479,8 @@ h1, h2, h3, h4 {
   font-weight: 500;
 }
 
-.input-group input {
+.input-group input,
+.input-group select {
   padding: 0.65rem 0.85rem;
   background: var(--bg-input);
   border: 1px solid var(--border-color);
@@ -491,7 +492,8 @@ h1, h2, h3, h4 {
   transition: var(--transition-smooth);
 }
 
-.input-group input:focus {
+.input-group input:focus,
+.input-group select:focus {
   outline: none;
   border-color: var(--accent);
   box-shadow: 0 0 0 2px rgba(var(--accent-rgb), 0.2);

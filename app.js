@@ -266,6 +266,10 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   const calculateSticker = () => {
+    const quoteModeEl = document.getElementById('sticker-quote-mode');
+    const quoteMode = quoteModeEl ? quoteModeEl.value : 'individual';
+    const isSheetMode = quoteMode === 'sheet';
+
     const sheetCost = getInputValue('sticker-sheet-cost');
     const yieldCount = getInputValue('sticker-yield') || 1;
     const failPct = getInputValue('sticker-fail-pct');
@@ -281,29 +285,37 @@ document.addEventListener('DOMContentLoaded', () => {
     const consignmentFeePct = getInputValue('sticker-consignment');
     const fixedCosts = getInputValue('sticker-fixed-costs');
 
-    // Formulas
-    const rawMaterialCost = (sheetCost / yieldCount) * (1 + failPct / 100);
-    const packagingCost = envelope + sleeve;
+    // Base per sticker costs
+    const rawMaterialCostPerSticker = (sheetCost / yieldCount) * (1 + failPct / 100);
+    const packagingCostPerSticker = envelope + sleeve;
     
     const totalLaborTime = setupTime + cutTime;
     const laborCostPerSticker = (totalLaborTime * laborRate) / yieldCount;
+    const fixedCostsPerSticker = fixedCosts;
     
-    const fixedCostsPerSticker = fixedCosts; // Treated as fixed cost overhead per sticker
-    
-    const totalCost = rawMaterialCost + packagingCost + laborCostPerSticker + fixedCostsPerSticker;
-    const profit = totalCost * (markup / 100);
-    const targetPayout = totalCost + profit;
+    const totalCostPerSticker = rawMaterialCostPerSticker + packagingCostPerSticker + laborCostPerSticker + fixedCostsPerSticker;
+    const profitPerSticker = totalCostPerSticker * (markup / 100);
+    const targetPayoutPerSticker = totalCostPerSticker + profitPerSticker;
 
     const consignmentMultiplier = consignmentFeePct >= 100 ? 0.001 : 1 - (consignmentFeePct / 100);
-    const rrp = targetPayout / consignmentMultiplier;
-    const consignmentAmount = rrp * (consignmentFeePct / 100);
-    const payout = rrp - consignmentAmount;
+    const rrpPerSticker = targetPayoutPerSticker / consignmentMultiplier;
+
+    // Apply multiplier if full sheet mode
+    const mult = isSheetMode ? yieldCount : 1;
+
+    const totalCost = totalCostPerSticker * mult;
+    const rrp = rrpPerSticker * mult;
+    const consignmentAmount = (rrpPerSticker * (consignmentFeePct / 100)) * mult;
+    const payout = (rrpPerSticker - (rrpPerSticker * (consignmentFeePct / 100))) * mult;
     const netProfit = payout - totalCost;
     
     const wholesale = rrp * 0.50;
     const wholesaleProfit = wholesale - totalCost;
 
     return {
+      quoteMode,
+      isSheetMode,
+      yieldCount,
       totalCost,
       rrp,
       profit: netProfit,
@@ -313,10 +325,10 @@ document.addEventListener('DOMContentLoaded', () => {
       wholesale,
       wholesaleProfit,
       breakdown: [
-        { name: 'Materials', value: rawMaterialCost, color: '#22d3ee' },
-        { name: 'Packaging', value: packagingCost, color: '#38bdf8' },
-        { name: 'Labor', value: laborCostPerSticker, color: '#818cf8' },
-        { name: 'Overhead', value: fixedCostsPerSticker, color: '#f472b6' },
+        { name: 'Materials', value: rawMaterialCostPerSticker * mult, color: '#22d3ee' },
+        { name: 'Packaging', value: packagingCostPerSticker * mult, color: '#38bdf8' },
+        { name: 'Labor', value: laborCostPerSticker * mult, color: '#818cf8' },
+        { name: 'Overhead', value: fixedCostsPerSticker * mult, color: '#f472b6' },
         { name: 'Consignment', value: consignmentAmount, color: '#f59e0b' },
         { name: 'Profit Margin', value: netProfit, color: '#10b981' }
       ]
@@ -450,7 +462,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Update Dashboard UI
     rrpValue.textContent = formatCurrency(result.rrp);
-    rrpMarkupText.textContent = `Based on ${markupValue}% Markup`;
+    if (activeTab === 'sticker' && result.isSheetMode) {
+      rrpMarkupText.textContent = `Based on ${markupValue}% Markup (Full Sheet of ${result.yieldCount})`;
+      costSubtext.textContent = `Cost per Full Sheet (${result.yieldCount} stickers/sheet)`;
+    } else {
+      rrpMarkupText.textContent = `Based on ${markupValue}% Markup`;
+      costSubtext.textContent = activeTab === '3dprint' ? 'Material + Labor + Power' : 'Material + Labor + Packaging';
+    }
     
     costValue.textContent = formatCurrency(result.totalCost);
     
@@ -478,7 +496,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const getProductInputs = (type) => {
     const inputs = {};
     const form = document.getElementById(`form-${type}`);
-    const inputElements = form.querySelectorAll('input');
+    const inputElements = form.querySelectorAll('input, select');
     inputElements.forEach(el => {
       inputs[el.id] = el.value;
     });
@@ -998,7 +1016,8 @@ document.addEventListener('DOMContentLoaded', () => {
     previewSubtotal.textContent = formatCurrency(subtotal);
     previewDiscount.textContent = `-${formatCurrency(discountAmt)}`;
     previewTotal.textContent = formatCurrency(total);
-    previewEffectiveUnit.textContent = `${formatCurrency(effectiveUnit)} / unit`;
+    const unitTag = (activeTab === 'sticker' && baseResults && baseResults.isSheetMode) ? 'sheet' : 'unit';
+    previewEffectiveUnit.textContent = `${formatCurrency(effectiveUnit)} / ${unitTag}`;
   };
 
   // Listeners for Quote updates
